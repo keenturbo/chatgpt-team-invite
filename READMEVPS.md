@@ -297,7 +297,3 @@ node -v
 
 如有问题，请提交 Issue：[https://github.com/keenturbo/chatgpt-team-invite/issues](https://github.com/keenturbo/chatgpt-team-invite/issues)
 ```
-
----
-
-创建这个文件后，VPS 分支就完整了。用户可以按照文档在 VPS 上部署。
