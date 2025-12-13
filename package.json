@@ -1,0 +1,25 @@
+{
+  "name": "chatgpt-team-invite",
+  "version": "1.0.0",
+  "description": "ChatGPT Team 自动邀请系统 - VPS 部署版本",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node --watch server.js"
+  },
+  "dependencies": {
+    "dotenv": "^16.3.1",
+    "express": "^4.18.2",
+    "node-fetch": "^3.3.2"
+  },
+  "engines": {
+    "node": ">=18.0.0"
+  },
+  "keywords": [
+    "chatgpt",
+    "team",
+    "invite",
+    "automation"
+  ],
+  "license": "MIT"
+}
