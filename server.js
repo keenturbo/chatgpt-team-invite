@@ -1,19 +1,190 @@
 const express = require('express');
 const path = require('path');
+const fs = require('fs');
+const crypto = require('crypto');
 require('dotenv').config();
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// 环境变量
-const CHATGPT_TOKEN = process.env.CHATGPT_TOKEN;
-const CHATGPT_ACCOUNT_ID = process.env.CHATGPT_ACCOUNT_ID;
+// 管理员配置
+const ADMIN_USER = process.env.ADMIN_USER || 'admin';
+const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
+
+// 数据文件路径
+const ACCOUNTS_FILE = path.join(__dirname, 'accounts.json');
+
+// 内存中的号池
+let accountPool = [];
+
+// 活跃的管理员 token
+let adminTokens = new Set();
 
 // 中间件
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// 邀请 API
+// ==================== 号池管理 ====================
+
+// 加载账号数据
+function loadAccounts() {
+  try {
+    if (fs.existsSync(ACCOUNTS_FILE)) {
+      const data = fs.readFileSync(ACCOUNTS_FILE, 'utf8');
+      const json = JSON.parse(data);
+      accountPool = json.accounts || [];
+      console.log(`Loaded ${accountPool.length} accounts from file`);
+    } else {
+      accountPool = [];
+      saveAccounts();
+    }
+  } catch (error) {
+    console.error('Error loading accounts:', error);
+    accountPool = [];
+  }
+}
+
+// 保存账号数据
+function saveAccounts() {
+  try {
+    const data = JSON.stringify({ accounts: accountPool }, null, 2);
+    fs.writeFileSync(ACCOUNTS_FILE, data, 'utf8');
+  } catch (error) {
+    console.error('Error saving accounts:', error);
+  }
+}
+
+// 获取可用账号（有剩余名额的）
+function getAvailableAccount() {
+  return accountPool.find(acc => acc.enabled && (acc.quota - acc.used) > 0);
+}
+
+// 生成唯一 ID
+function generateId() {
+  return crypto.randomUUID();
+}
+
+// 生成管理员 token
+function generateToken() {
+  return crypto.randomBytes(32).toString('hex');
+}
+
+// ==================== 认证中间件 ====================
+
+function authMiddleware(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    return res.status(401).json({ success: false, error: '未授权' });
+  }
+  
+  const token = authHeader.substring(7);
+  if (!adminTokens.has(token)) {
+    return res.status(401).json({ success: false, error: '无效的 token' });
+  }
+  
+  next();
+}
+
+// ==================== 管理员 API ====================
+
+// 登录
+app.post('/api/admin/login', (req, res) => {
+  const { username, password } = req.body;
+  
+  if (username === ADMIN_USER && password === ADMIN_PASS) {
+    const token = generateToken();
+    adminTokens.add(token);
+    
+    // 1小时后自动过期
+    setTimeout(() => {
+      adminTokens.delete(token);
+    }, 60 * 60 * 1000);
+    
+    res.json({ success: true, token });
+  } else {
+    res.status(401).json({ success: false, error: '用户名或密码错误' });
+  }
+});
+
+// 获取账号列表
+app.get('/api/admin/accounts', authMiddleware, (req, res) => {
+  // 返回账号列表，但隐藏完整 token
+  const safeAccounts = accountPool.map(acc => ({
+    id: acc.id,
+    name: acc.name,
+    accountId: acc.accountId,
+    quota: acc.quota,
+    used: acc.used,
+    enabled: acc.enabled,
+    createdAt: acc.createdAt
+  }));
+  
+  res.json({ success: true, accounts: safeAccounts });
+});
+
+// 添加账号
+app.post('/api/admin/accounts', authMiddleware, (req, res) => {
+  const { name, accountId, token, quota } = req.body;
+  
+  if (!name || !accountId || !token) {
+    return res.status(400).json({ success: false, error: '请填写完整信息' });
+  }
+  
+  // 检查是否已存在相同 accountId
+  if (accountPool.some(acc => acc.accountId === accountId)) {
+    return res.status(400).json({ success: false, error: '该账号已存在' });
+  }
+  
+  const newAccount = {
+    id: generateId(),
+    name: name.trim(),
+    accountId: accountId.trim(),
+    token: token.trim(),
+    quota: parseInt(quota) || 4,
+    used: 0,
+    enabled: true,
+    createdAt: new Date().toISOString()
+  };
+  
+  accountPool.push(newAccount);
+  saveAccounts();
+  
+  res.json({ success: true, message: '账号添加成功' });
+});
+
+// 删除账号
+app.delete('/api/admin/accounts/:id', authMiddleware, (req, res) => {
+  const { id } = req.params;
+  
+  const index = accountPool.findIndex(acc => acc.id === id);
+  if (index === -1) {
+    return res.status(404).json({ success: false, error: '账号不存在' });
+  }
+  
+  accountPool.splice(index, 1);
+  saveAccounts();
+  
+  res.json({ success: true, message: '账号已删除' });
+});
+
+// 重置账号使用次数
+app.post('/api/admin/accounts/:id/reset', authMiddleware, (req, res) => {
+  const { id } = req.params;
+  
+  const account = accountPool.find(acc => acc.id === id);
+  if (!account) {
+    return res.status(404).json({ success: false, error: '账号不存在' });
+  }
+  
+  account.used = 0;
+  account.enabled = true;
+  saveAccounts();
+  
+  res.json({ success: true, message: '已重置使用次数' });
+});
+
+// ==================== 邀请 API ====================
+
 app.post('/api/invite', async (req, res) => {
   const { email } = req.body;
 
@@ -25,17 +196,27 @@ app.post('/api/invite', async (req, res) => {
     });
   }
 
-  // 检查环境变量
-  if (!CHATGPT_TOKEN || !CHATGPT_ACCOUNT_ID) {
-    console.error('Missing CHATGPT_TOKEN or CHATGPT_ACCOUNT_ID');
-    return res.status(500).json({
+  // 获取可用账号
+  const account = getAvailableAccount();
+  if (!account) {
+    return res.status(503).json({
       success: false,
-      message: '服务配置错误，请联系管理员'
+      message: '暂无可用名额，请稍后再试'
     });
   }
 
   try {
-    const result = await sendInvite(email);
+    const result = await sendInvite(email, account);
+    
+    if (result.success) {
+      // 更新使用次数
+      account.used += 1;
+      if (account.used >= account.quota) {
+        account.enabled = false;
+      }
+      saveAccounts();
+    }
+    
     res.json(result);
   } catch (error) {
     console.error('Invite error:', error);
@@ -47,8 +228,8 @@ app.post('/api/invite', async (req, res) => {
 });
 
 // 发送邀请
-async function sendInvite(email) {
-  const url = `https://chatgpt.com/backend-api/accounts/${CHATGPT_ACCOUNT_ID}/invites`;
+async function sendInvite(email, account) {
+  const url = `https://chatgpt.com/backend-api/accounts/${account.accountId}/invites`;
 
   const headers = {
     'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64; rv:145.0) Gecko/20100101 Firefox/145.0',
@@ -56,8 +237,8 @@ async function sendInvite(email) {
     'Accept-Language': 'zh-CN,zh;q=0.8,zh-TW;q=0.7,zh-HK;q=0.5,en-US;q=0.3,en;q=0.2',
     'Accept-Encoding': 'gzip, deflate, br',
     'Referer': 'https://chatgpt.com/admin/members',
-    'Authorization': `Bearer ${CHATGPT_TOKEN}`,
-    'ChatGPT-Account-ID': CHATGPT_ACCOUNT_ID,
+    'Authorization': `Bearer ${account.token}`,
+    'ChatGPT-Account-ID': account.accountId,
     'Content-Type': 'application/json',
   };
 
@@ -74,7 +255,7 @@ async function sendInvite(email) {
   });
 
   const responseText = await response.text();
-  console.log(`Invite response for ${email}: ${response.status} - ${responseText}`);
+  console.log(`Invite response for ${email} (account: ${account.name}): ${response.status} - ${responseText}`);
 
   if (response.ok) {
     let data;
@@ -97,7 +278,6 @@ async function sendInvite(email) {
         errorMessage = errorData.detail;
       }
     } catch {
-      // 检查是否被 Cloudflare 拦截
       if (responseText.includes('blocked') || responseText.includes('Cloudflare')) {
         errorMessage = '请求被拦截，请稍后重试';
       }
@@ -118,12 +298,22 @@ function isValidEmail(email) {
 
 // 健康检查
 app.get('/health', (req, res) => {
-  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+  const availableQuota = accountPool.reduce((sum, acc) => {
+    return sum + (acc.enabled ? Math.max(0, acc.quota - acc.used) : 0);
+  }, 0);
+  
+  res.json({
+    status: 'ok',
+    timestamp: new Date().toISOString(),
+    accounts: accountPool.length,
+    availableQuota: availableQuota
+  });
 });
 
 // 启动服务器
+loadAccounts();
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
-  console.log(`CHATGPT_ACCOUNT_ID: ${CHATGPT_ACCOUNT_ID ? 'configured' : 'NOT SET'}`);
-  console.log(`CHATGPT_TOKEN: ${CHATGPT_TOKEN ? 'configured' : 'NOT SET'}`);
+  console.log(`Admin user: ${ADMIN_USER}`);
+  console.log(`Accounts loaded: ${accountPool.length}`);
 });
