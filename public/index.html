@@ -175,23 +175,29 @@
             color: #666;
             font-size: 13px;
             margin-bottom: 16px;
-            line-height: 1.6;
+            line-height: 1.8;
         }
         .modal .tips strong {
             color: #e74c3c;
         }
-        .modal .remark-group {
+        .order-code {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            font-size: 32px;
+            font-weight: 700;
+            letter-spacing: 4px;
+            padding: 12px 24px;
+            border-radius: 8px;
+            margin: 16px 0;
+            font-family: 'Courier New', monospace;
+        }
+        .order-hint {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 6px;
+            font-size: 12px;
             margin-bottom: 16px;
-            text-align: left;
-        }
-        .modal .remark-group label {
-            font-size: 13px;
-            color: #666;
-            margin-bottom: 6px;
-        }
-        .modal .remark-group input {
-            font-size: 14px;
-            padding: 10px 12px;
         }
         .modal .btn-group {
             display: flex;
@@ -249,15 +255,13 @@
         <div class="modal">
             <h2>扫码付款</h2>
             <div class="price">¥9.9</div>
-            <img src="https://pic.snippet.pp.ua/generated/IMG_4859.jpeg" alt="收款码" class="qrcode">
+            <img src="https://pic.icon.pp.ua/IMG_5235.jpeg" alt="收款码" class="qrcode">
             <div class="tips">
-                请使用 <strong>微信</strong> 或 <strong>支付宝</strong> 扫码付款<br>
-                付款时请备注您的 <strong>邮箱后4位</strong>
+                请使用 <strong>支付宝</strong>或<strong>微信</strong> 扫码付款<br>
+                付款时请备注下方订单号
             </div>
-            <div class="remark-group">
-                <label>付款备注（邮箱后4位）</label>
-                <input type="text" id="paymentRemark" placeholder="如：m.com" maxlength="10">
-            </div>
+            <div class="order-hint">⚠️ 务必备注订单号，否则无法确认付款</div>
+            <div class="order-code" id="orderCode">----</div>
             <div class="btn-group">
                 <button type="button" class="btn-cancel" onclick="closePaymentModal()">取消</button>
                 <button type="button" class="btn-confirm" onclick="confirmPayment()">已完成付款</button>
@@ -271,9 +275,20 @@
         const submitBtn = document.getElementById('submitBtn');
         const messageDiv = document.getElementById('message');
         const paymentModal = document.getElementById('paymentModal');
-        const paymentRemark = document.getElementById('paymentRemark');
+        const orderCodeDiv = document.getElementById('orderCode');
 
         let currentEmail = '';
+        let currentOrderCode = '';
+
+        // 生成4位订单号
+        function generateOrderCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 去掉容易混淆的 I O 0 1
+            let code = '';
+            for (let i = 0; i < 4; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
+        }
 
         function showMessage(text, type) {
             messageDiv.textContent = text;
@@ -286,9 +301,8 @@
 
         function openPaymentModal(email) {
             currentEmail = email;
-            // 自动填充邮箱后4位作为备注建议
-            const emailSuffix = email.slice(-4);
-            paymentRemark.value = emailSuffix;
+            currentOrderCode = generateOrderCode();
+            orderCodeDiv.textContent = currentOrderCode;
             paymentModal.classList.add('active');
         }
 
@@ -299,12 +313,6 @@
         }
 
         async function confirmPayment() {
-            const remark = paymentRemark.value.trim();
-            if (!remark) {
-                alert('请填写付款备注');
-                return;
-            }
-
             closePaymentModal();
             submitBtn.disabled = true;
             submitBtn.textContent = '提交中...';
@@ -318,14 +326,14 @@
                     },
                     body: JSON.stringify({ 
                         email: currentEmail,
-                        remark: remark
+                        remark: currentOrderCode
                     }),
                 });
 
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    showMessage('订单已提交！管理员确认付款后将发送邀请，请耐心等待。', 'success');
+                    showMessage(`订单已提交！订单号：${currentOrderCode}，管理员确认付款后将发送邀请。`, 'success');
                     emailInput.value = '';
                 } else {
                     showMessage(data.message || '提交失败，请稍后重试', 'error');
