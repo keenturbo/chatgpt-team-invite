@@ -11,11 +11,17 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
 
+// Bark 推送配置
+const BARK_KEY = process.env.BARK_KEY || '';
+const SITE_URL = process.env.SITE_URL || 'https://team.lorry.pp.ua';
+
 // 数据文件路径
 const ACCOUNTS_FILE = path.join(__dirname, 'accounts.json');
+const ORDERS_FILE = path.join(__dirname, 'orders.json');
 
-// 内存中的号池
+// 内存中的数据
 let accountPool = [];
+let orderList = [];
 
 // 活跃的管理员 token
 let adminTokens = new Set();
@@ -24,7 +30,7 @@ let adminTokens = new Set();
 app.use(express.json());
 app.use(express.static(path.join(__dirname, 'public')));
 
-// ==================== 号池管理 ====================
+// ==================== 数据管理 ====================
 
 // 加载账号数据
 function loadAccounts() {
@@ -54,6 +60,34 @@ function saveAccounts() {
   }
 }
 
+// 加载订单数据
+function loadOrders() {
+  try {
+    if (fs.existsSync(ORDERS_FILE)) {
+      const data = fs.readFileSync(ORDERS_FILE, 'utf8');
+      const json = JSON.parse(data);
+      orderList = json.orders || [];
+      console.log(`Loaded ${orderList.length} orders from file`);
+    } else {
+      orderList = [];
+      saveOrders();
+    }
+  } catch (error) {
+    console.error('Error loading orders:', error);
+    orderList = [];
+  }
+}
+
+// 保存订单数据
+function saveOrders() {
+  try {
+    const data = JSON.stringify({ orders: orderList }, null, 2);
+    fs.writeFileSync(ORDERS_FILE, data, 'utf8');
+  } catch (error) {
+    console.error('Error saving orders:', error);
+  }
+}
+
 // 获取可用账号（有剩余名额的）
 function getAvailableAccount() {
   return accountPool.find(acc => acc.enabled && (acc.quota - acc.used) > 0);
@@ -67,6 +101,30 @@ function generateId() {
 // 生成管理员 token
 function generateToken() {
   return crypto.randomBytes(32).toString('hex');
+}
+
+// ==================== Bark 推送 ====================
+
+async function sendBarkNotification(title, body) {
+  if (!BARK_KEY) {
+    console.log('Bark key not configured, skipping notification');
+    return;
+  }
+  
+  try {
+    const url = `https://api.day.app/${BARK_KEY}/${encodeURIComponent(title)}/${encodeURIComponent(body)}?url=${encodeURIComponent(SITE_URL + '/admin.html')}&group=ChatGPT-Team&sound=minuet`;
+    
+    const response = await fetch(url);
+    const result = await response.json();
+    
+    if (result.code === 200) {
+      console.log('Bark notification sent successfully');
+    } else {
+      console.error('Bark notification failed:', result);
+    }
+  } catch (error) {
+    console.error('Error sending Bark notification:', error);
+  }
 }
 
 // ==================== 认证中间件 ====================
@@ -108,7 +166,6 @@ app.post('/api/admin/login', (req, res) => {
 
 // 获取账号列表
 app.get('/api/admin/accounts', authMiddleware, (req, res) => {
-  // 返回账号列表，但隐藏完整 token
   const safeAccounts = accountPool.map(acc => ({
     id: acc.id,
     name: acc.name,
@@ -130,7 +187,6 @@ app.post('/api/admin/accounts', authMiddleware, (req, res) => {
     return res.status(400).json({ success: false, error: '请填写完整信息' });
   }
   
-  // 检查是否已存在相同 accountId
   if (accountPool.some(acc => acc.accountId === accountId)) {
     return res.status(400).json({ success: false, error: '该账号已存在' });
   }
@@ -183,11 +239,12 @@ app.post('/api/admin/accounts/:id/reset', authMiddleware, (req, res) => {
   res.json({ success: true, message: '已重置使用次数' });
 });
 
-// ==================== 邀请 API ====================
+// ==================== 订单 API ====================
 
-app.post('/api/invite', async (req, res) => {
-  const { email } = req.body;
-
+// 创建订单（用户提交）
+app.post('/api/order', async (req, res) => {
+  const { email, remark } = req.body;
+  
   // 验证邮箱
   if (!email || !isValidEmail(email)) {
     return res.status(400).json({
@@ -195,8 +252,134 @@ app.post('/api/invite', async (req, res) => {
       message: '请输入有效的邮箱地址'
     });
   }
+  
+  // 检查是否有可用名额
+  const availableAccount = getAvailableAccount();
+  if (!availableAccount) {
+    return res.status(503).json({
+      success: false,
+      message: '暂无可用名额，请稍后再试'
+    });
+  }
+  
+  // 检查是否已有相同邮箱的待处理订单
+  const existingOrder = orderList.find(o => o.email === email && o.status === 'pending');
+  if (existingOrder) {
+    return res.status(400).json({
+      success: false,
+      message: '您已有待处理的订单，请等待确认'
+    });
+  }
+  
+  // 创建订单
+  const newOrder = {
+    id: generateId(),
+    email: email.trim(),
+    remark: (remark || '').trim(),
+    status: 'pending',
+    createdAt: new Date().toISOString()
+  };
+  
+  orderList.unshift(newOrder); // 新订单放在最前面
+  saveOrders();
+  
+  // 发送 Bark 通知
+  const pendingCount = orderList.filter(o => o.status === 'pending').length;
+  sendBarkNotification(
+    '新订单待确认',
+    `邮箱: ${email}\n备注: ${remark || '无'}\n待处理: ${pendingCount}单`
+  );
+  
+  res.json({
+    success: true,
+    message: '订单已提交，请等待管理员确认付款'
+  });
+});
 
+// 获取订单列表（管理员）
+app.get('/api/admin/orders', authMiddleware, (req, res) => {
+  res.json({ success: true, orders: orderList });
+});
+
+// 确认订单（管理员）
+app.post('/api/admin/orders/:id/confirm', authMiddleware, async (req, res) => {
+  const { id } = req.params;
+  
+  const order = orderList.find(o => o.id === id);
+  if (!order) {
+    return res.status(404).json({ success: false, error: '订单不存在' });
+  }
+  
+  if (order.status !== 'pending') {
+    return res.status(400).json({ success: false, error: '订单状态不正确' });
+  }
+  
   // 获取可用账号
+  const account = getAvailableAccount();
+  if (!account) {
+    return res.status(503).json({ success: false, error: '暂无可用名额' });
+  }
+  
+  try {
+    // 发送邀请
+    const result = await sendInvite(order.email, account);
+    
+    if (result.success) {
+      // 更新账号使用次数
+      account.used += 1;
+      if (account.used >= account.quota) {
+        account.enabled = false;
+      }
+      saveAccounts();
+      
+      // 更新订单状态
+      order.status = 'confirmed';
+      order.confirmedAt = new Date().toISOString();
+      order.accountName = account.name;
+      saveOrders();
+      
+      res.json({ success: true, message: '订单已确认，邀请已发送' });
+    } else {
+      res.status(500).json({ success: false, error: result.message || '邀请发送失败' });
+    }
+  } catch (error) {
+    console.error('Confirm order error:', error);
+    res.status(500).json({ success: false, error: '处理订单时出错' });
+  }
+});
+
+// 拒绝订单（管理员）
+app.post('/api/admin/orders/:id/reject', authMiddleware, (req, res) => {
+  const { id } = req.params;
+  
+  const order = orderList.find(o => o.id === id);
+  if (!order) {
+    return res.status(404).json({ success: false, error: '订单不存在' });
+  }
+  
+  if (order.status !== 'pending') {
+    return res.status(400).json({ success: false, error: '订单状态不正确' });
+  }
+  
+  order.status = 'rejected';
+  order.rejectedAt = new Date().toISOString();
+  saveOrders();
+  
+  res.json({ success: true, message: '订单已拒绝' });
+});
+
+// ==================== 邀请 API（保留直接邀请，可选） ====================
+
+app.post('/api/invite', async (req, res) => {
+  const { email } = req.body;
+
+  if (!email || !isValidEmail(email)) {
+    return res.status(400).json({
+      success: false,
+      message: '请输入有效的邮箱地址'
+    });
+  }
+
   const account = getAvailableAccount();
   if (!account) {
     return res.status(503).json({
@@ -209,7 +392,6 @@ app.post('/api/invite', async (req, res) => {
     const result = await sendInvite(email, account);
     
     if (result.success) {
-      // 更新使用次数
       account.used += 1;
       if (account.used >= account.quota) {
         account.enabled = false;
@@ -270,7 +452,6 @@ async function sendInvite(email, account) {
       data: data
     };
   } else {
-    // 解析错误信息
     let errorMessage = '邀请发送失败';
     try {
       const errorData = JSON.parse(responseText);
@@ -301,19 +482,24 @@ app.get('/health', (req, res) => {
   const availableQuota = accountPool.reduce((sum, acc) => {
     return sum + (acc.enabled ? Math.max(0, acc.quota - acc.used) : 0);
   }, 0);
+  const pendingOrders = orderList.filter(o => o.status === 'pending').length;
   
   res.json({
     status: 'ok',
     timestamp: new Date().toISOString(),
     accounts: accountPool.length,
-    availableQuota: availableQuota
+    availableQuota: availableQuota,
+    pendingOrders: pendingOrders
   });
 });
 
 // 启动服务器
 loadAccounts();
+loadOrders();
 app.listen(PORT, () => {
   console.log(`Server running on port ${PORT}`);
   console.log(`Admin user: ${ADMIN_USER}`);
   console.log(`Accounts loaded: ${accountPool.length}`);
+  console.log(`Orders loaded: ${orderList.length}`);
+  console.log(`Bark notifications: ${BARK_KEY ? 'enabled' : 'disabled'}`);
 });
