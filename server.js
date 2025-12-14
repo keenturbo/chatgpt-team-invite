@@ -11,6 +11,12 @@ const PORT = process.env.PORT || 3000;
 const ADMIN_USER = process.env.ADMIN_USER || 'admin';
 const ADMIN_PASS = process.env.ADMIN_PASS || 'admin123';
 
+// ==================== 安全检查 ====================
+if (!ADMIN_USER || !ADMIN_PASS || ADMIN_PASS === 'admin123') {
+  console.error('❌ 安全错误: 请在 .env 中设置强密码（不能使用 admin123）');
+  process.exit(1);
+}
+
 // Bark 推送配置
 const BARK_KEY = process.env.BARK_KEY || '';
 const SITE_URL = process.env.SITE_URL || 'https://team.lorry.pp.ua';
@@ -27,8 +33,43 @@ let orderList = [];
 let adminTokens = new Set();
 
 // 中间件
-app.use(express.json());
+app.use(express.json({ limit: '10kb' })); // 限制请求体大小防止内存溢出
 app.use(express.static(path.join(__dirname, 'public')));
+
+// ==================== 频率限制 ====================
+const rateLimitMap = new Map();
+
+function rateLimit(key, maxRequests, windowMs) {
+  const now = Date.now();
+  const record = rateLimitMap.get(key) || { count: 0, resetTime: now + windowMs };
+  
+  if (now > record.resetTime) {
+    record.count = 0;
+    record.resetTime = now + windowMs;
+  }
+  
+  record.count++;
+  rateLimitMap.set(key, record);
+  return record.count <= maxRequests;
+}
+
+// 清理过期记录
+setInterval(() => {
+  const now = Date.now();
+  for (const [key, record] of rateLimitMap) {
+    if (now > record.resetTime) {
+      rateLimitMap.delete(key);
+    }
+  }
+}, 60000);
+
+// 获取客户端 IP
+function getClientIP(req) {
+  return req.headers['cf-connecting-ip'] || 
+         req.headers['x-forwarded-for']?.split(',')[0] || 
+         req.socket.remoteAddress || 
+         'unknown';
+}
 
 // ==================== 数据管理 ====================
 
@@ -39,13 +80,13 @@ function loadAccounts() {
       const data = fs.readFileSync(ACCOUNTS_FILE, 'utf8');
       const json = JSON.parse(data);
       accountPool = json.accounts || [];
-      console.log(`Loaded ${accountPool.length} accounts from file`);
+      console.log(`✓ Loaded ${accountPool.length} accounts`);
     } else {
       accountPool = [];
       saveAccounts();
     }
   } catch (error) {
-    console.error('Error loading accounts:', error);
+    console.error('Error loading accounts');
     accountPool = [];
   }
 }
@@ -56,7 +97,7 @@ function saveAccounts() {
     const data = JSON.stringify({ accounts: accountPool }, null, 2);
     fs.writeFileSync(ACCOUNTS_FILE, data, 'utf8');
   } catch (error) {
-    console.error('Error saving accounts:', error);
+    console.error('Error saving accounts');
   }
 }
 
@@ -67,13 +108,13 @@ function loadOrders() {
       const data = fs.readFileSync(ORDERS_FILE, 'utf8');
       const json = JSON.parse(data);
       orderList = json.orders || [];
-      console.log(`Loaded ${orderList.length} orders from file`);
+      console.log(`✓ Loaded ${orderList.length} orders`);
     } else {
       orderList = [];
       saveOrders();
     }
   } catch (error) {
-    console.error('Error loading orders:', error);
+    console.error('Error loading orders');
     orderList = [];
   }
 }
@@ -84,7 +125,7 @@ function saveOrders() {
     const data = JSON.stringify({ orders: orderList }, null, 2);
     fs.writeFileSync(ORDERS_FILE, data, 'utf8');
   } catch (error) {
-    console.error('Error saving orders:', error);
+    console.error('Error saving orders');
   }
 }
 
@@ -103,11 +144,26 @@ function generateToken() {
   return crypto.randomBytes(32).toString('hex');
 }
 
+// 生成唯一订单号（后端生成，避免重复）
+function generateOrderCode() {
+  const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+  let code = '';
+  for (let i = 0; i < 5; i++) {
+    code += chars.charAt(Math.floor(Math.random() * chars.length));
+  }
+  // 检查是否已存在
+  const existingOrder = orderList.find(o => o.remark && o.remark === code);
+  if (existingOrder) {
+    return generateOrderCode(); // 递归重新生成
+  }
+  return code;
+}
+
 // ==================== Bark 推送 ====================
 
 async function sendBarkNotification(title, body) {
   if (!BARK_KEY) {
-    console.log('Bark key not configured, skipping notification');
+    console.log('Bark key not configured');
     return;
   }
   
@@ -118,12 +174,10 @@ async function sendBarkNotification(title, body) {
     const result = await response.json();
     
     if (result.code === 200) {
-      console.log('Bark notification sent successfully');
-    } else {
-      console.error('Bark notification failed:', result);
+      console.log('✓ Bark notification sent');
     }
   } catch (error) {
-    console.error('Error sending Bark notification:', error);
+    console.error('Bark notification error');
   }
 }
 
@@ -147,6 +201,13 @@ function authMiddleware(req, res, next) {
 
 // 登录
 app.post('/api/admin/login', (req, res) => {
+  const ip = getClientIP(req);
+  
+  // 登录频率限制：每IP每分钟最多5次
+  if (!rateLimit(`login:${ip}`, 5, 60000)) {
+    return res.status(429).json({ success: false, error: '登录尝试过于频繁' });
+  }
+  
   const { username, password } = req.body;
   
   if (username === ADMIN_USER && password === ADMIN_PASS) {
@@ -158,8 +219,10 @@ app.post('/api/admin/login', (req, res) => {
       adminTokens.delete(token);
     }, 60 * 60 * 1000);
     
+    console.log(`✓ Admin login from ${ip}`);
     res.json({ success: true, token });
   } else {
+    console.log(`✗ Failed login from ${ip}`);
     res.status(401).json({ success: false, error: '用户名或密码错误' });
   }
 });
@@ -187,16 +250,21 @@ app.post('/api/admin/accounts', authMiddleware, (req, res) => {
     return res.status(400).json({ success: false, error: '请填写完整信息' });
   }
   
+  // 验证输入长度，防止内存溢出
+  if (name.length > 50 || accountId.length > 100 || token.length > 5000) {
+    return res.status(400).json({ success: false, error: '输入内容过长' });
+  }
+  
   if (accountPool.some(acc => acc.accountId === accountId)) {
     return res.status(400).json({ success: false, error: '该账号已存在' });
   }
   
   const newAccount = {
     id: generateId(),
-    name: name.trim(),
+    name: name.trim().substring(0, 50),
     accountId: accountId.trim(),
     token: token.trim(),
-    quota: parseInt(quota) || 4,
+    quota: Math.min(Math.max(parseInt(quota) || 4, 1), 10),
     used: 0,
     enabled: true,
     createdAt: new Date().toISOString()
@@ -241,15 +309,51 @@ app.post('/api/admin/accounts/:id/reset', authMiddleware, (req, res) => {
 
 // ==================== 订单 API ====================
 
+// 生成订单号接口（前端调用）
+app.post('/api/generate-order', (req, res) => {
+  const ip = getClientIP(req);
+  
+  // 频率限制：每IP每分钟最多10次
+  if (!rateLimit(`generate:${ip}`, 10, 60000)) {
+    return res.status(429).json({ success: false, error: '请求过于频繁' });
+  }
+  
+  const { email } = req.body;
+  if (!email || !isValidEmail(email)) {
+    return res.status(400).json({ success: false, error: '无效邮箱' });
+  }
+  
+  const orderCode = generateOrderCode();
+  res.json({ success: true, orderCode });
+});
+
 // 创建订单（用户提交）
 app.post('/api/order', async (req, res) => {
-  const { email, remark } = req.body;
+  const ip = getClientIP(req);
+  
+  // 订单提交频率限制：每IP每分钟最多3次
+  if (!rateLimit(`order:${ip}`, 3, 60000)) {
+    return res.status(429).json({ 
+      success: false, 
+      message: '提交过于频繁，请稍后再试' 
+    });
+  }
+  
+  const { email, remark, payMethod } = req.body;
   
   // 验证邮箱
   if (!email || !isValidEmail(email)) {
     return res.status(400).json({
       success: false,
       message: '请输入有效的邮箱地址'
+    });
+  }
+  
+  // 验证邮箱长度
+  if (email.length > 100) {
+    return res.status(400).json({
+      success: false,
+      message: '邮箱地址过长'
     });
   }
   
@@ -271,12 +375,17 @@ app.post('/api/order', async (req, res) => {
     });
   }
   
+  // 处理备注，限制长度
+  let finalRemark = (remark || '').trim().substring(0, 50);
+  
   // 创建订单
   const newOrder = {
     id: generateId(),
-    email: email.trim(),
-    remark: (remark || '').trim(),
+    email: email.trim().toLowerCase(),
+    remark: finalRemark,
+    payMethod: payMethod || 'wechat',
     status: 'pending',
+    ip: ip, // 记录IP便于排查
     createdAt: new Date().toISOString()
   };
   
@@ -287,7 +396,7 @@ app.post('/api/order', async (req, res) => {
   const pendingCount = orderList.filter(o => o.status === 'pending').length;
   sendBarkNotification(
     '新订单待确认',
-    `邮箱: ${email}\n备注: ${remark || '无'}\n待处理: ${pendingCount}单`
+    `邮箱: ${email}\n备注: ${finalRemark || '无'}\n待处理: ${pendingCount}单`
   );
   
   res.json({
@@ -343,7 +452,7 @@ app.post('/api/admin/orders/:id/confirm', authMiddleware, async (req, res) => {
       res.status(500).json({ success: false, error: result.message || '邀请发送失败' });
     }
   } catch (error) {
-    console.error('Confirm order error:', error);
+    console.error('Confirm order error');
     res.status(500).json({ success: false, error: '处理订单时出错' });
   }
 });
@@ -368,46 +477,7 @@ app.post('/api/admin/orders/:id/reject', authMiddleware, (req, res) => {
   res.json({ success: true, message: '订单已拒绝' });
 });
 
-// ==================== 邀请 API（保留直接邀请，可选） ====================
-
-app.post('/api/invite', async (req, res) => {
-  const { email } = req.body;
-
-  if (!email || !isValidEmail(email)) {
-    return res.status(400).json({
-      success: false,
-      message: '请输入有效的邮箱地址'
-    });
-  }
-
-  const account = getAvailableAccount();
-  if (!account) {
-    return res.status(503).json({
-      success: false,
-      message: '暂无可用名额，请稍后再试'
-    });
-  }
-
-  try {
-    const result = await sendInvite(email, account);
-    
-    if (result.success) {
-      account.used += 1;
-      if (account.used >= account.quota) {
-        account.enabled = false;
-      }
-      saveAccounts();
-    }
-    
-    res.json(result);
-  } catch (error) {
-    console.error('Invite error:', error);
-    res.status(500).json({
-      success: false,
-      message: '邀请发送失败，请稍后重试'
-    });
-  }
-});
+// ==================== 邀请功能 ====================
 
 // 发送邀请
 async function sendInvite(email, account) {
@@ -437,20 +507,10 @@ async function sendInvite(email, account) {
   });
 
   const responseText = await response.text();
-  console.log(`Invite response for ${email} (account: ${account.name}): ${response.status} - ${responseText}`);
+  console.log(`Invite: ${email} -> ${response.status}`);
 
   if (response.ok) {
-    let data;
-    try {
-      data = JSON.parse(responseText);
-    } catch {
-      data = responseText;
-    }
-    return {
-      success: true,
-      message: '邀请已发送，请查收邮件',
-      data: data
-    };
+    return { success: true, message: '邀请已发送' };
   } else {
     let errorMessage = '邀请发送失败';
     try {
@@ -460,24 +520,28 @@ async function sendInvite(email, account) {
       }
     } catch {
       if (responseText.includes('blocked') || responseText.includes('Cloudflare')) {
-        errorMessage = '请求被拦截，请稍后重试';
+        errorMessage = '请求被拦截';
       }
     }
-    return {
-      success: false,
-      message: errorMessage,
-      status: response.status
-    };
+    return { success: false, message: errorMessage };
   }
 }
 
 // 邮箱验证
 function isValidEmail(email) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-  return emailRegex.test(email);
+  return emailRegex.test(email) && email.length <= 100;
 }
+
 // 查询可用名额（公开接口）
 app.get('/api/quota', (req, res) => {
+  const ip = getClientIP(req);
+  
+  // 库存查询频率限制：每IP每分钟最多30次
+  if (!rateLimit(`quota:${ip}`, 30, 60000)) {
+    return res.status(429).json({ success: false, error: '请求过于频繁' });
+  }
+  
   const availableQuota = accountPool.reduce((sum, acc) => {
     return sum + (acc.enabled ? Math.max(0, acc.quota - acc.used) : 0);
   }, 0);
@@ -487,29 +551,24 @@ app.get('/api/quota', (req, res) => {
     availableQuota: availableQuota
   });
 });
+
 // 健康检查
 app.get('/health', (req, res) => {
-  const availableQuota = accountPool.reduce((sum, acc) => {
-    return sum + (acc.enabled ? Math.max(0, acc.quota - acc.used) : 0);
-  }, 0);
-  const pendingOrders = orderList.filter(o => o.status === 'pending').length;
-  
-  res.json({
-    status: 'ok',
-    timestamp: new Date().toISOString(),
-    accounts: accountPool.length,
-    availableQuota: availableQuota,
-    pendingOrders: pendingOrders
-  });
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// 404 处理
+app.use((req, res) => {
+  res.status(404).json({ error: 'Not Found' });
 });
 
 // 启动服务器
 loadAccounts();
 loadOrders();
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
-  console.log(`Admin user: ${ADMIN_USER}`);
-  console.log(`Accounts loaded: ${accountPool.length}`);
-  console.log(`Orders loaded: ${orderList.length}`);
-  console.log(`Bark notifications: ${BARK_KEY ? 'enabled' : 'disabled'}`);
+  console.log(`\n🚀 Server running on port ${PORT}`);
+  console.log(`✓ Admin: ${ADMIN_USER}`);
+  console.log(`✓ Accounts: ${accountPool.length}`);
+  console.log(`✓ Orders: ${orderList.length}`);
+  console.log(`✓ Bark: ${BARK_KEY ? 'enabled' : 'disabled'}\n`);
 });
