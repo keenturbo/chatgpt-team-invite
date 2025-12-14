@@ -93,10 +93,22 @@
       padding: 8px 16px;
       font-size: 12px;
     }
-    .account-list {
+    .btn-success:hover {
+      background: #219a52;
+    }
+    .btn-warning {
+      background: #f39c12;
+      color: white;
+      padding: 8px 16px;
+      font-size: 12px;
+    }
+    .btn-warning:hover {
+      background: #d68910;
+    }
+    .account-list, .order-list {
       margin-top: 20px;
     }
-    .account-item {
+    .account-item, .order-item {
       background: #f8f9fa;
       border-radius: 10px;
       padding: 15px;
@@ -107,16 +119,16 @@
       flex-wrap: wrap;
       gap: 10px;
     }
-    .account-info {
+    .account-info, .order-info {
       flex: 1;
       min-width: 200px;
     }
-    .account-name {
+    .account-name, .order-email {
       font-weight: 600;
       color: #1a1a2e;
       margin-bottom: 5px;
     }
-    .account-id {
+    .account-id, .order-meta {
       font-size: 12px;
       color: #666;
       font-family: monospace;
@@ -126,7 +138,17 @@
       color: #667eea;
       font-weight: 500;
     }
-    .account-actions {
+    .order-remark {
+      font-size: 13px;
+      color: #333;
+      margin-top: 4px;
+    }
+    .order-time {
+      font-size: 11px;
+      color: #999;
+      margin-top: 4px;
+    }
+    .account-actions, .order-actions {
       display: flex;
       gap: 8px;
     }
@@ -142,6 +164,18 @@
       color: #155724;
     }
     .status-exhausted {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .status-pending {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .status-confirmed {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status-rejected {
       background: #f8d7da;
       color: #721c24;
     }
@@ -168,7 +202,7 @@
     }
     .stats {
       display: grid;
-      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
       gap: 15px;
       margin-bottom: 20px;
     }
@@ -178,6 +212,9 @@
       padding: 20px;
       border-radius: 10px;
       text-align: center;
+    }
+    .stat-card.warning {
+      background: linear-gradient(135deg, #f39c12 0%, #e74c3c 100%);
     }
     .stat-value {
       font-size: 28px;
@@ -202,6 +239,55 @@
     }
     .logout-btn:hover {
       background: rgba(255,255,255,0.3);
+    }
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+    }
+    .tab-btn {
+      padding: 8px 16px;
+      border: none;
+      background: #e0e0e0;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+    .tab-btn.active {
+      background: #667eea;
+      color: white;
+    }
+    .tab-btn:hover:not(.active) {
+      background: #d0d0d0;
+    }
+    .badge {
+      display: inline-block;
+      background: #e74c3c;
+      color: white;
+      font-size: 11px;
+      padding: 2px 6px;
+      border-radius: 10px;
+      margin-left: 5px;
+    }
+    .empty-message {
+      color: #666;
+      text-align: center;
+      padding: 20px;
+    }
+    .refresh-btn {
+      float: right;
+      padding: 6px 12px;
+      font-size: 12px;
+      background: #667eea;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+    .refresh-btn:hover {
+      background: #5a6fd6;
     }
   </style>
 </head>
@@ -232,6 +318,10 @@
     
     <!-- 统计卡片 -->
     <div class="stats">
+      <div class="stat-card warning">
+        <div class="stat-value" id="pendingOrders">0</div>
+        <div class="stat-label">待确认订单</div>
+      </div>
       <div class="stat-card">
         <div class="stat-value" id="totalAccounts">0</div>
         <div class="stat-label">账号总数</div>
@@ -243,6 +333,25 @@
       <div class="stat-card">
         <div class="stat-value" id="totalQuota">0</div>
         <div class="stat-label">剩余名额</div>
+      </div>
+    </div>
+
+    <!-- 待确认订单 -->
+    <div class="card">
+      <h2>
+        订单管理
+        <button class="refresh-btn" onclick="loadOrders()">刷新</button>
+      </h2>
+      <div class="tabs">
+        <button class="tab-btn active" onclick="switchOrderTab('pending')" id="tabPending">
+          待确认 <span class="badge" id="pendingBadge">0</span>
+        </button>
+        <button class="tab-btn" onclick="switchOrderTab('confirmed')" id="tabConfirmed">已完成</button>
+        <button class="tab-btn" onclick="switchOrderTab('rejected')" id="tabRejected">已拒绝</button>
+      </div>
+      <div id="orderMessage"></div>
+      <div id="orderList" class="order-list">
+        <p class="empty-message">暂无订单</p>
       </div>
     </div>
 
@@ -275,18 +384,26 @@
     <div class="card">
       <h2>账号列表</h2>
       <div id="accountList" class="account-list">
-        <p style="color: #666; text-align: center;">暂无账号，请添加</p>
+        <p class="empty-message">暂无账号，请添加</p>
       </div>
     </div>
   </div>
 
   <script>
     let authToken = localStorage.getItem('adminToken');
+    let currentOrderTab = 'pending';
+    let allOrders = [];
 
     // 检查登录状态
     if (authToken) {
       showAdminPanel();
+      loadData();
+    }
+
+    // 加载所有数据
+    function loadData() {
       loadAccounts();
+      loadOrders();
     }
 
     // 登录表单提交
@@ -307,7 +424,7 @@
           authToken = data.token;
           localStorage.setItem('adminToken', authToken);
           showAdminPanel();
-          loadAccounts();
+          loadData();
         } else {
           showMessage('loginMessage', data.error || '登录失败', 'error');
         }
@@ -348,6 +465,137 @@
       }
     });
 
+    // 加载订单列表
+    async function loadOrders() {
+      try {
+        const res = await fetch('/api/admin/orders', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          allOrders = data.orders || [];
+          renderOrders();
+          updateOrderStats();
+        } else if (res.status === 401) {
+          logout();
+        }
+      } catch (err) {
+        console.error('加载订单失败:', err);
+      }
+    }
+
+    // 切换订单标签
+    function switchOrderTab(tab) {
+      currentOrderTab = tab;
+      document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
+      document.getElementById('tab' + tab.charAt(0).toUpperCase() + tab.slice(1)).classList.add('active');
+      renderOrders();
+    }
+
+    // 渲染订单列表
+    function renderOrders() {
+      const container = document.getElementById('orderList');
+      const filteredOrders = allOrders.filter(o => o.status === currentOrderTab);
+      
+      if (!filteredOrders || filteredOrders.length === 0) {
+        container.innerHTML = '<p class="empty-message">暂无订单</p>';
+        return;
+      }
+
+      container.innerHTML = filteredOrders.map(order => {
+        const statusClass = `status-${order.status}`;
+        const statusText = {
+          'pending': '待确认',
+          'confirmed': '已完成',
+          'rejected': '已拒绝'
+        }[order.status] || order.status;
+        
+        const time = new Date(order.createdAt).toLocaleString('zh-CN');
+        
+        let actions = '';
+        if (order.status === 'pending') {
+          actions = `
+            <button class="btn btn-success" onclick="confirmOrder('${order.id}')">确认付款</button>
+            <button class="btn btn-danger" onclick="rejectOrder('${order.id}')">拒绝</button>
+          `;
+        }
+        
+        return `
+          <div class="order-item">
+            <div class="order-info">
+              <div class="order-email">${escapeHtml(order.email)}</div>
+              <div class="order-remark">备注: ${escapeHtml(order.remark || '无')}</div>
+              <div class="order-time">${time}</div>
+            </div>
+            <span class="status-badge ${statusClass}">${statusText}</span>
+            <div class="order-actions">
+              ${actions}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 更新订单统计
+    function updateOrderStats() {
+      const pendingCount = allOrders.filter(o => o.status === 'pending').length;
+      document.getElementById('pendingOrders').textContent = pendingCount;
+      document.getElementById('pendingBadge').textContent = pendingCount;
+      
+      // 如果有待确认订单，显示提示
+      if (pendingCount > 0) {
+        document.getElementById('pendingBadge').style.display = 'inline-block';
+      } else {
+        document.getElementById('pendingBadge').style.display = 'none';
+      }
+    }
+
+    // 确认订单
+    async function confirmOrder(id) {
+      if (!confirm('确认该用户已付款？将自动发送邀请邮件。')) return;
+      
+      try {
+        const res = await fetch(`/api/admin/orders/${id}/confirm`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showMessage('orderMessage', '订单已确认，邀请已发送', 'success');
+          loadOrders();
+          loadAccounts(); // 刷新账号使用情况
+        } else {
+          showMessage('orderMessage', data.error || '确认失败', 'error');
+        }
+      } catch (err) {
+        showMessage('orderMessage', '网络错误', 'error');
+      }
+    }
+
+    // 拒绝订单
+    async function rejectOrder(id) {
+      if (!confirm('确定要拒绝这个订单吗？')) return;
+      
+      try {
+        const res = await fetch(`/api/admin/orders/${id}/reject`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showMessage('orderMessage', '订单已拒绝', 'success');
+          loadOrders();
+        } else {
+          showMessage('orderMessage', data.error || '操作失败', 'error');
+        }
+      } catch (err) {
+        showMessage('orderMessage', '网络错误', 'error');
+      }
+    }
+
     // 加载账号列表
     async function loadAccounts() {
       try {
@@ -372,7 +620,7 @@
       const container = document.getElementById('accountList');
       
       if (!accounts || accounts.length === 0) {
-        container.innerHTML = '<p style="color: #666; text-align: center;">暂无账号，请添加</p>';
+        container.innerHTML = '<p class="empty-message">暂无账号，请添加</p>';
         return;
       }
 
@@ -479,6 +727,13 @@
       div.textContent = text;
       return div.innerHTML;
     }
+
+    // 定时刷新订单（每30秒）
+    setInterval(() => {
+      if (authToken) {
+        loadOrders();
+      }
+    }, 30000);
   </script>
 </body>
 </html>
