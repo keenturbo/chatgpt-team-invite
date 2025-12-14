@@ -48,7 +48,7 @@
             color: #333;
             font-weight: 500;
         }
-        input[type="email"] {
+        input[type="email"], input[type="text"] {
             width: 100%;
             padding: 14px 16px;
             border: 2px solid #e0e0e0;
@@ -56,7 +56,7 @@
             font-size: 16px;
             transition: border-color 0.3s;
         }
-        input[type="email"]:focus {
+        input[type="email"]:focus, input[type="text"]:focus {
             outline: none;
             border-color: #667eea;
         }
@@ -104,11 +104,117 @@
             color: #004085;
             display: block;
         }
+        .message.warning {
+            background: #fff3cd;
+            color: #856404;
+            display: block;
+        }
         .footer {
             margin-top: 24px;
             text-align: center;
             color: #999;
             font-size: 12px;
+        }
+
+        /* 弹窗样式 */
+        .modal-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.6);
+            z-index: 1000;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .modal-overlay.active {
+            display: flex;
+        }
+        .modal {
+            background: white;
+            border-radius: 16px;
+            padding: 30px;
+            width: 100%;
+            max-width: 360px;
+            text-align: center;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
+            animation: modalIn 0.3s ease;
+        }
+        @keyframes modalIn {
+            from {
+                opacity: 0;
+                transform: scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: scale(1);
+            }
+        }
+        .modal h2 {
+            color: #333;
+            margin-bottom: 8px;
+            font-size: 20px;
+        }
+        .modal .price {
+            color: #e74c3c;
+            font-size: 28px;
+            font-weight: 700;
+            margin-bottom: 16px;
+        }
+        .modal .qrcode {
+            width: 200px;
+            height: 200px;
+            margin: 0 auto 16px;
+            border-radius: 8px;
+            border: 2px solid #eee;
+        }
+        .modal .tips {
+            color: #666;
+            font-size: 13px;
+            margin-bottom: 16px;
+            line-height: 1.6;
+        }
+        .modal .tips strong {
+            color: #e74c3c;
+        }
+        .modal .remark-group {
+            margin-bottom: 16px;
+            text-align: left;
+        }
+        .modal .remark-group label {
+            font-size: 13px;
+            color: #666;
+            margin-bottom: 6px;
+        }
+        .modal .remark-group input {
+            font-size: 14px;
+            padding: 10px 12px;
+        }
+        .modal .btn-group {
+            display: flex;
+            gap: 10px;
+        }
+        .modal .btn-group button {
+            flex: 1;
+            padding: 12px;
+            font-size: 14px;
+        }
+        .btn-cancel {
+            background: #e0e0e0 !important;
+            color: #333 !important;
+        }
+        .btn-cancel:hover {
+            background: #d0d0d0 !important;
+            box-shadow: none !important;
+        }
+        .btn-confirm {
+            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%) !important;
+        }
+        .btn-confirm:hover {
+            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4) !important;
         }
     </style>
 </head>
@@ -138,15 +244,98 @@
         </div>
     </div>
 
+    <!-- 付款弹窗 -->
+    <div id="paymentModal" class="modal-overlay">
+        <div class="modal">
+            <h2>扫码付款</h2>
+            <div class="price">¥9.9</div>
+            <img src="https://pic.snippet.pp.ua/generated/IMG_4859.jpeg" alt="收款码" class="qrcode">
+            <div class="tips">
+                请使用 <strong>微信</strong> 或 <strong>支付宝</strong> 扫码付款<br>
+                付款时请备注您的 <strong>邮箱后4位</strong>
+            </div>
+            <div class="remark-group">
+                <label>付款备注（邮箱后4位）</label>
+                <input type="text" id="paymentRemark" placeholder="如：m.com" maxlength="10">
+            </div>
+            <div class="btn-group">
+                <button type="button" class="btn-cancel" onclick="closePaymentModal()">取消</button>
+                <button type="button" class="btn-confirm" onclick="confirmPayment()">已完成付款</button>
+            </div>
+        </div>
+    </div>
+
     <script>
         const form = document.getElementById('inviteForm');
         const emailInput = document.getElementById('email');
         const submitBtn = document.getElementById('submitBtn');
         const messageDiv = document.getElementById('message');
+        const paymentModal = document.getElementById('paymentModal');
+        const paymentRemark = document.getElementById('paymentRemark');
+
+        let currentEmail = '';
 
         function showMessage(text, type) {
             messageDiv.textContent = text;
             messageDiv.className = 'message ' + type;
+        }
+
+        function hideMessage() {
+            messageDiv.className = 'message';
+        }
+
+        function openPaymentModal(email) {
+            currentEmail = email;
+            // 自动填充邮箱后4位作为备注建议
+            const emailSuffix = email.slice(-4);
+            paymentRemark.value = emailSuffix;
+            paymentModal.classList.add('active');
+        }
+
+        function closePaymentModal() {
+            paymentModal.classList.remove('active');
+            submitBtn.disabled = false;
+            submitBtn.textContent = '获取邀请';
+        }
+
+        async function confirmPayment() {
+            const remark = paymentRemark.value.trim();
+            if (!remark) {
+                alert('请填写付款备注');
+                return;
+            }
+
+            closePaymentModal();
+            submitBtn.disabled = true;
+            submitBtn.textContent = '提交中...';
+            showMessage('正在提交订单...', 'loading');
+
+            try {
+                const response = await fetch('/api/order', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({ 
+                        email: currentEmail,
+                        remark: remark
+                    }),
+                });
+
+                const data = await response.json();
+
+                if (response.ok && data.success) {
+                    showMessage('订单已提交！管理员确认付款后将发送邀请，请耐心等待。', 'success');
+                    emailInput.value = '';
+                } else {
+                    showMessage(data.message || '提交失败，请稍后重试', 'error');
+                }
+            } catch (error) {
+                showMessage('网络错误，请稍后重试', 'error');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = '获取邀请';
+            }
         }
 
         form.addEventListener('submit', async (e) => {
@@ -155,32 +344,25 @@
             const email = emailInput.value.trim();
             if (!email) return;
 
+            hideMessage();
             submitBtn.disabled = true;
-            submitBtn.textContent = '发送中...';
-            showMessage('正在发送邀请...', 'loading');
+            submitBtn.textContent = '请稍候...';
 
-            try {
-                const response = await fetch('/api/invite', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ email }),
-                });
+            // 打开付款弹窗
+            openPaymentModal(email);
+        });
 
-                const data = await response.json();
+        // 点击弹窗外部关闭
+        paymentModal.addEventListener('click', (e) => {
+            if (e.target === paymentModal) {
+                closePaymentModal();
+            }
+        });
 
-                if (response.ok) {
-                    showMessage('邀请已发送，请查收邮件！', 'success');
-                    emailInput.value = '';
-                } else {
-                    showMessage(data.error || '发送失败，请稍后重试', 'error');
-                }
-            } catch (error) {
-                showMessage('网络错误，请稍后重试', 'error');
-            } finally {
-                submitBtn.disabled = false;
-                submitBtn.textContent = '获取邀请';
+        // ESC 键关闭弹窗
+        document.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape' && paymentModal.classList.contains('active')) {
+                closePaymentModal();
             }
         });
     </script>
