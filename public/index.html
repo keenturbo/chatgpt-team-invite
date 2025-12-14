@@ -104,11 +104,6 @@
             color: #004085;
             display: block;
         }
-        .message.warning {
-            background: #fff3cd;
-            color: #856404;
-            display: block;
-        }
         .footer {
             margin-top: 24px;
             text-align: center;
@@ -126,7 +121,7 @@
             height: 100%;
             background: rgba(0, 0, 0, 0.6);
             z-index: 1000;
-            align-items: center;
+            align-items: flex-start;
             justify-content: center;
             padding: 20px;
             overflow-y: auto;
@@ -139,68 +134,82 @@
             border-radius: 16px;
             padding: 25px;
             width: 100%;
-            max-width: 400px;
+            max-width: 440px;
             text-align: center;
             box-shadow: 0 20px 60px rgba(0,0,0,0.4);
             animation: modalIn 0.3s ease;
-            margin: auto;
+            margin: 20px auto;
         }
         @keyframes modalIn {
-            from {
-                opacity: 0;
-                transform: scale(0.9);
-            }
-            to {
-                opacity: 1;
-                transform: scale(1);
-            }
+            from { opacity: 0; transform: scale(0.9); }
+            to { opacity: 1; transform: scale(1); }
         }
         .modal h2 {
             color: #333;
-            margin-bottom: 8px;
+            margin-bottom: 6px;
             font-size: 20px;
         }
         .modal .price {
             color: #e74c3c;
-            font-size: 28px;
+            font-size: 26px;
             font-weight: 700;
-            margin-bottom: 12px;
+            margin-bottom: 15px;
         }
-        .qrcode-container {
+        
+        /* 支付方式选项卡 */
+        .pay-tabs {
             display: flex;
-            justify-content: center;
-            gap: 15px;
+            border-bottom: 2px solid #eee;
+            margin-bottom: 15px;
+        }
+        .pay-tab {
+            flex: 1;
+            padding: 10px;
+            background: none;
+            border: none;
+            font-size: 13px;
+            font-weight: 500;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.3s;
+            border-bottom: 2px solid transparent;
+            margin-bottom: -2px;
+        }
+        .pay-tab:hover {
+            color: #667eea;
+        }
+        .pay-tab.active {
+            color: #667eea;
+            border-bottom-color: #667eea;
+        }
+        .pay-tab.wechat.active { color: #07c160; border-bottom-color: #07c160; }
+        .pay-tab.alipay.active { color: #1677ff; border-bottom-color: #1677ff; }
+        .pay-tab.hongbao.active { color: #ff6b35; border-bottom-color: #ff6b35; }
+        
+        /* 支付内容区 */
+        .pay-content {
+            display: none;
+            padding: 10px 0;
+        }
+        .pay-content.active {
+            display: block;
+        }
+        .qrcode-box {
             margin-bottom: 12px;
-            flex-wrap: wrap;
         }
-        .qrcode-item {
-            text-align: center;
-        }
-        .qrcode-item img {
-            width: 140px;
-            height: 140px;
+        .qrcode-box img {
+            width: 180px;
+            height: 180px;
             border-radius: 8px;
             border: 2px solid #eee;
         }
-        .qrcode-item .qr-label {
-            margin-top: 6px;
+        .pay-tips {
+            color: #666;
             font-size: 12px;
-            color: #666;
-            font-weight: 500;
-        }
-        .qrcode-item .qr-label.wechat {
-            color: #07c160;
-        }
-        .qrcode-item .qr-label.alipay {
-            color: #1677ff;
-        }
-        .modal .tips {
-            color: #666;
-            font-size: 13px;
-            margin-bottom: 12px;
             line-height: 1.8;
+            margin-bottom: 10px;
         }
-        .modal .tips strong {
+        .pay-tips strong {
             color: #e74c3c;
         }
         .mobile-tip {
@@ -211,28 +220,86 @@
             font-size: 11px;
             margin-bottom: 12px;
         }
+        
+        /* 口令红包输入 */
+        .hongbao-input {
+            margin: 15px 0;
+        }
+        .hongbao-input label {
+            display: block;
+            text-align: left;
+            font-size: 13px;
+            color: #333;
+            margin-bottom: 6px;
+        }
+        .hongbao-input input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ff6b35;
+            border-radius: 8px;
+            font-size: 15px;
+            text-align: center;
+            letter-spacing: 1px;
+        }
+        .hongbao-input input:focus {
+            outline: none;
+            border-color: #e55a2b;
+        }
+        .hongbao-steps {
+            background: #fff8f5;
+            border-radius: 8px;
+            padding: 12px;
+            text-align: left;
+            font-size: 12px;
+            color: #666;
+            line-height: 1.8;
+        }
+        .hongbao-steps strong {
+            color: #ff6b35;
+        }
+        
+        /* 订单号显示 */
+        .order-section {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 12px;
+            margin: 12px 0;
+        }
+        .order-label {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 6px;
+        }
         .order-code {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            font-size: 28px;
+            font-size: 24px;
             font-weight: 700;
-            letter-spacing: 4px;
-            padding: 10px 20px;
-            border-radius: 8px;
-            margin: 12px 0;
+            letter-spacing: 3px;
+            padding: 8px 16px;
+            border-radius: 6px;
             font-family: 'Courier New', monospace;
+            display: inline-block;
         }
         .order-hint {
+            font-size: 11px;
+            color: #e74c3c;
+            margin-top: 6px;
+        }
+        
+        .switch-tip {
             background: #fff3cd;
             color: #856404;
             padding: 8px 12px;
             border-radius: 6px;
-            font-size: 12px;
+            font-size: 11px;
             margin-bottom: 12px;
         }
+        
         .modal .btn-group {
             display: flex;
             gap: 10px;
+            margin-top: 15px;
         }
         .modal .btn-group button {
             flex: 1;
@@ -253,6 +320,7 @@
         .btn-confirm:hover {
             box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4) !important;
         }
+        
         .quota-info {
             background: #f0f0f0;
             padding: 8px 12px;
@@ -303,30 +371,66 @@
     <!-- 付款弹窗 -->
     <div id="paymentModal" class="modal-overlay">
         <div class="modal">
-            <h2>扫码付款</h2>
+            <h2>选择支付方式</h2>
             <div class="price">¥9.9</div>
             
-            <div class="qrcode-container">
-                <div class="qrcode-item">
+            <!-- 支付方式选项卡 -->
+            <div class="pay-tabs">
+                <button type="button" class="pay-tab wechat active" onclick="switchPayTab('wechat')">微信支付</button>
+                <button type="button" class="pay-tab alipay" onclick="switchPayTab('alipay')">支付宝</button>
+                <button type="button" class="pay-tab hongbao" onclick="switchPayTab('hongbao')">口令红包</button>
+            </div>
+            
+            <!-- 微信支付 -->
+            <div id="payWechat" class="pay-content active">
+                <div class="qrcode-box">
                     <img src="https://pic.icon.pp.ua/wechat-pay.jpeg" alt="微信收款码">
-                    <div class="qr-label wechat">微信支付</div>
                 </div>
-                <div class="qrcode-item">
+                <div class="mobile-tip">📱 手机用户：长按二维码保存，再用微信扫码</div>
+                <div class="pay-tips">
+                    扫码付款，备注 <strong>订单号</strong>（如无法备注可换其他方式）
+                </div>
+            </div>
+            
+            <!-- 支付宝 -->
+            <div id="payAlipay" class="pay-content">
+                <div class="qrcode-box">
                     <img src="https://pic.icon.pp.ua/alipay.jpeg" alt="支付宝收款码">
-                    <div class="qr-label alipay">支付宝</div>
+                </div>
+                <div class="mobile-tip">📱 手机用户：长按二维码保存，再用支付宝扫码</div>
+                <div class="pay-tips">
+                    扫码付款，备注 <strong>订单号</strong>
                 </div>
             </div>
             
-            <div class="mobile-tip">
-                📱 手机用户：长按二维码保存图片，再用微信/支付宝扫码
+            <!-- 口令红包 -->
+            <div id="payHongbao" class="pay-content">
+                <div class="hongbao-steps">
+                    <strong>操作步骤：</strong><br>
+                    1. 打开支付宝，搜索「口令红包」<br>
+                    2. 发一个 <strong>¥10</strong> 的口令红包<br>
+                    3. 复制口令，粘贴到下方输入框<br>
+                    4. 点击「已完成付款」提交
+                </div>
+                <div class="hongbao-input">
+                    <label>粘贴口令红包口令</label>
+                    <input type="text" id="hongbaoCode" placeholder="粘贴口令红包的口令">
+                </div>
+                <div class="pay-tips" style="font-size: 11px; color: #999;">
+                    口令红包无需备注订单号，系统自动关联
+                </div>
             </div>
             
-            <div class="tips">
-                付款时请备注下方 <strong>订单号</strong>
+            <!-- 订单号（扫码支付显示） -->
+            <div id="orderSection" class="order-section">
+                <div class="order-label">您的订单号</div>
+                <div class="order-code" id="orderCode">----</div>
+                <div class="order-hint">扫码付款时请备注此订单号</div>
             </div>
             
-            <div class="order-hint">⚠️ 务必备注订单号，否则无法确认付款</div>
-            <div class="order-code" id="orderCode">----</div>
+            <div class="switch-tip">
+                💡 微信无法备注？试试支付宝或口令红包
+            </div>
             
             <div class="btn-group">
                 <button type="button" class="btn-cancel" onclick="closePaymentModal()">取消</button>
@@ -342,20 +446,13 @@
         const messageDiv = document.getElementById('message');
         const paymentModal = document.getElementById('paymentModal');
         const orderCodeDiv = document.getElementById('orderCode');
+        const orderSection = document.getElementById('orderSection');
         const quotaInfoDiv = document.getElementById('quotaInfo');
+        const hongbaoCodeInput = document.getElementById('hongbaoCode');
 
         let currentEmail = '';
         let currentOrderCode = '';
-
-        // 生成4位订单号
-        function generateOrderCode() {
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
-            let code = '';
-            for (let i = 0; i < 4; i++) {
-                code += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
-            return code;
-        }
+        let currentPayMethod = 'wechat';
 
         function showMessage(text, type) {
             messageDiv.textContent = text;
@@ -364,6 +461,26 @@
 
         function hideMessage() {
             messageDiv.className = 'message';
+        }
+
+        // 切换支付方式
+        function switchPayTab(method) {
+            currentPayMethod = method;
+            
+            // 更新选项卡状态
+            document.querySelectorAll('.pay-tab').forEach(tab => tab.classList.remove('active'));
+            document.querySelector(`.pay-tab.${method}`).classList.add('active');
+            
+            // 更新内容区
+            document.querySelectorAll('.pay-content').forEach(content => content.classList.remove('active'));
+            document.getElementById('pay' + method.charAt(0).toUpperCase() + method.slice(1)).classList.add('active');
+            
+            // 口令红包不需要显示订单号
+            if (method === 'hongbao') {
+                orderSection.style.display = 'none';
+            } else {
+                orderSection.style.display = 'block';
+            }
         }
 
         // 检查库存
@@ -393,14 +510,26 @@
                 return true;
             } catch (error) {
                 console.error('检查库存失败:', error);
-                return true; // 出错时允许继续
+                return true;
             }
+        }
+
+        // 生成订单号（备用，主要由后端生成）
+        function generateOrderCode() {
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
+            let code = '';
+            for (let i = 0; i < 5; i++) {
+                code += chars.charAt(Math.floor(Math.random() * chars.length));
+            }
+            return code;
         }
 
         function openPaymentModal(email) {
             currentEmail = email;
             currentOrderCode = generateOrderCode();
             orderCodeDiv.textContent = currentOrderCode;
+            hongbaoCodeInput.value = '';
+            switchPayTab('wechat');
             paymentModal.classList.add('active');
         }
 
@@ -411,6 +540,17 @@
         }
 
         async function confirmPayment() {
+            // 口令红包需要填写口令
+            let remark = currentOrderCode;
+            if (currentPayMethod === 'hongbao') {
+                const hongbaoCode = hongbaoCodeInput.value.trim();
+                if (!hongbaoCode) {
+                    alert('请填写口令红包的口令');
+                    return;
+                }
+                remark = '口令:' + hongbaoCode;
+            }
+            
             closePaymentModal();
             submitBtn.disabled = true;
             submitBtn.textContent = '提交中...';
@@ -424,16 +564,24 @@
                     },
                     body: JSON.stringify({ 
                         email: currentEmail,
-                        remark: currentOrderCode
+                        remark: remark,
+                        payMethod: currentPayMethod
                     }),
                 });
 
                 const data = await response.json();
 
                 if (response.ok && data.success) {
-                    showMessage(`订单已提交！订单号：${currentOrderCode}，管理员确认付款后将发送邀请。`, 'success');
+                    let successMsg = '订单已提交！';
+                    if (currentPayMethod === 'hongbao') {
+                        successMsg += '口令已记录，';
+                    } else {
+                        successMsg += `订单号：${currentOrderCode}，`;
+                    }
+                    successMsg += '管理员确认后将发送邀请。';
+                    showMessage(successMsg, 'success');
                     emailInput.value = '';
-                    checkQuota(); // 刷新库存显示
+                    checkQuota();
                 } else {
                     showMessage(data.message || '提交失败，请稍后重试', 'error');
                 }
@@ -455,7 +603,6 @@
             submitBtn.disabled = true;
             submitBtn.textContent = '检查中...';
 
-            // 先检查库存
             const hasQuota = await checkQuota();
             if (!hasQuota) {
                 showMessage('当前名额已满，请稍后再试', 'error');
@@ -468,24 +615,19 @@
             openPaymentModal(email);
         });
 
-        // 点击弹窗外部关闭
         paymentModal.addEventListener('click', (e) => {
             if (e.target === paymentModal) {
                 closePaymentModal();
             }
         });
 
-        // ESC 键关闭弹窗
         document.addEventListener('keydown', (e) => {
             if (e.key === 'Escape' && paymentModal.classList.contains('active')) {
                 closePaymentModal();
             }
         });
 
-        // 页面加载时检查库存
         checkQuota();
-        
-        // 每60秒刷新库存
         setInterval(checkQuota, 60000);
     </script>
 </body>
