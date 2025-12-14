@@ -129,6 +129,7 @@
             align-items: center;
             justify-content: center;
             padding: 20px;
+            overflow-y: auto;
         }
         .modal-overlay.active {
             display: flex;
@@ -136,12 +137,13 @@
         .modal {
             background: white;
             border-radius: 16px;
-            padding: 30px;
+            padding: 25px;
             width: 100%;
-            max-width: 360px;
+            max-width: 400px;
             text-align: center;
             box-shadow: 0 20px 60px rgba(0,0,0,0.4);
             animation: modalIn 0.3s ease;
+            margin: auto;
         }
         @keyframes modalIn {
             from {
@@ -162,42 +164,71 @@
             color: #e74c3c;
             font-size: 28px;
             font-weight: 700;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
-        .modal .qrcode {
-            width: 200px;
-            height: 200px;
-            margin: 0 auto 16px;
+        .qrcode-container {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+            margin-bottom: 12px;
+            flex-wrap: wrap;
+        }
+        .qrcode-item {
+            text-align: center;
+        }
+        .qrcode-item img {
+            width: 140px;
+            height: 140px;
             border-radius: 8px;
             border: 2px solid #eee;
+        }
+        .qrcode-item .qr-label {
+            margin-top: 6px;
+            font-size: 12px;
+            color: #666;
+            font-weight: 500;
+        }
+        .qrcode-item .qr-label.wechat {
+            color: #07c160;
+        }
+        .qrcode-item .qr-label.alipay {
+            color: #1677ff;
         }
         .modal .tips {
             color: #666;
             font-size: 13px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
             line-height: 1.8;
         }
         .modal .tips strong {
             color: #e74c3c;
         }
+        .mobile-tip {
+            background: #e7f1ff;
+            color: #004085;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 11px;
+            margin-bottom: 12px;
+        }
         .order-code {
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
             color: white;
-            font-size: 32px;
+            font-size: 28px;
             font-weight: 700;
             letter-spacing: 4px;
-            padding: 12px 24px;
+            padding: 10px 20px;
             border-radius: 8px;
-            margin: 16px 0;
+            margin: 12px 0;
             font-family: 'Courier New', monospace;
         }
         .order-hint {
             background: #fff3cd;
             color: #856404;
-            padding: 10px;
+            padding: 8px 12px;
             border-radius: 6px;
             font-size: 12px;
-            margin-bottom: 16px;
+            margin-bottom: 12px;
         }
         .modal .btn-group {
             display: flex;
@@ -222,12 +253,31 @@
         .btn-confirm:hover {
             box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4) !important;
         }
+        .quota-info {
+            background: #f0f0f0;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+        .quota-info.low {
+            background: #fff3cd;
+            color: #856404;
+        }
+        .quota-info.out {
+            background: #f8d7da;
+            color: #721c24;
+        }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>ChatGPT Team</h1>
         <p class="subtitle">输入邮箱获取邀请链接</p>
+        
+        <div id="quotaInfo" class="quota-info" style="display: none;"></div>
         
         <form id="inviteForm">
             <div class="form-group">
@@ -255,13 +305,29 @@
         <div class="modal">
             <h2>扫码付款</h2>
             <div class="price">¥9.9</div>
-            <img src="https://pic.icon.pp.ua/IMG_5235.jpeg" alt="收款码" class="qrcode">
-            <div class="tips">
-                请使用 <strong>支付宝</strong> 或 <strong>微信</strong> 扫码付款<br>
-                付款时请备注下方订单号
+            
+            <div class="qrcode-container">
+                <div class="qrcode-item">
+                    <img src="https://pic.icon.pp.ua/wechat-pay.jpeg" alt="微信收款码">
+                    <div class="qr-label wechat">微信支付</div>
+                </div>
+                <div class="qrcode-item">
+                    <img src="https://pic.icon.pp.ua/alipay.jpeg" alt="支付宝收款码">
+                    <div class="qr-label alipay">支付宝</div>
+                </div>
             </div>
+            
+            <div class="mobile-tip">
+                📱 手机用户：长按二维码保存图片，再用微信/支付宝扫码
+            </div>
+            
+            <div class="tips">
+                付款时请备注下方 <strong>订单号</strong>
+            </div>
+            
             <div class="order-hint">⚠️ 务必备注订单号，否则无法确认付款</div>
             <div class="order-code" id="orderCode">----</div>
+            
             <div class="btn-group">
                 <button type="button" class="btn-cancel" onclick="closePaymentModal()">取消</button>
                 <button type="button" class="btn-confirm" onclick="confirmPayment()">已完成付款</button>
@@ -276,13 +342,14 @@
         const messageDiv = document.getElementById('message');
         const paymentModal = document.getElementById('paymentModal');
         const orderCodeDiv = document.getElementById('orderCode');
+        const quotaInfoDiv = document.getElementById('quotaInfo');
 
         let currentEmail = '';
         let currentOrderCode = '';
 
         // 生成4位订单号
         function generateOrderCode() {
-            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789'; // 去掉容易混淆的 I O 0 1
+            const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
             let code = '';
             for (let i = 0; i < 4; i++) {
                 code += chars.charAt(Math.floor(Math.random() * chars.length));
@@ -297,6 +364,37 @@
 
         function hideMessage() {
             messageDiv.className = 'message';
+        }
+
+        // 检查库存
+        async function checkQuota() {
+            try {
+                const response = await fetch('/api/quota');
+                const data = await response.json();
+                
+                if (data.success) {
+                    const quota = data.availableQuota;
+                    if (quota <= 0) {
+                        quotaInfoDiv.textContent = '⚠️ 当前名额已满，请稍后再试';
+                        quotaInfoDiv.className = 'quota-info out';
+                        quotaInfoDiv.style.display = 'block';
+                        submitBtn.disabled = true;
+                        submitBtn.textContent = '暂无名额';
+                        return false;
+                    } else if (quota <= 3) {
+                        quotaInfoDiv.textContent = `🔥 剩余名额：${quota}，先到先得`;
+                        quotaInfoDiv.className = 'quota-info low';
+                        quotaInfoDiv.style.display = 'block';
+                    } else {
+                        quotaInfoDiv.style.display = 'none';
+                    }
+                    return true;
+                }
+                return true;
+            } catch (error) {
+                console.error('检查库存失败:', error);
+                return true; // 出错时允许继续
+            }
         }
 
         function openPaymentModal(email) {
@@ -335,6 +433,7 @@
                 if (response.ok && data.success) {
                     showMessage(`订单已提交！订单号：${currentOrderCode}，管理员确认付款后将发送邀请。`, 'success');
                     emailInput.value = '';
+                    checkQuota(); // 刷新库存显示
                 } else {
                     showMessage(data.message || '提交失败，请稍后重试', 'error');
                 }
@@ -354,9 +453,18 @@
 
             hideMessage();
             submitBtn.disabled = true;
-            submitBtn.textContent = '请稍候...';
+            submitBtn.textContent = '检查中...';
 
-            // 打开付款弹窗
+            // 先检查库存
+            const hasQuota = await checkQuota();
+            if (!hasQuota) {
+                showMessage('当前名额已满，请稍后再试', 'error');
+                submitBtn.disabled = false;
+                submitBtn.textContent = '获取邀请';
+                return;
+            }
+
+            submitBtn.textContent = '请稍候...';
             openPaymentModal(email);
         });
 
@@ -373,6 +481,12 @@
                 closePaymentModal();
             }
         });
+
+        // 页面加载时检查库存
+        checkQuota();
+        
+        // 每60秒刷新库存
+        setInterval(checkQuota, 60000);
     </script>
 </body>
 </html>
