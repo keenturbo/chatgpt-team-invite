@@ -4,6 +4,8 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ChatGPT Team 邀请</title>
+    <!-- 添加 CSP 防止 XSS 攻击 -->
+    <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https://pic.icon.pp.ua; connect-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline';">
     <style>
         * {
             margin: 0;
@@ -355,6 +357,7 @@
                     id="email" 
                     name="email" 
                     placeholder="your@email.com"
+                    maxlength="100"
                     required
                 >
             </div>
@@ -414,7 +417,7 @@
                 </div>
                 <div class="hongbao-input">
                     <label>粘贴口令红包口令</label>
-                    <input type="text" id="hongbaoCode" placeholder="粘贴口令红包的口令">
+                    <input type="text" id="hongbaoCode" placeholder="粘贴口令红包的口令" maxlength="50">
                 </div>
                 <div class="pay-tips" style="font-size: 11px; color: #999;">
                     口令红包无需备注订单号，系统自动关联
@@ -424,7 +427,7 @@
             <!-- 订单号（扫码支付显示） -->
             <div id="orderSection" class="order-section">
                 <div class="order-label">您的订单号</div>
-                <div class="order-code" id="orderCode">----</div>
+                <div class="order-code" id="orderCode">加载中...</div>
                 <div class="order-hint">扫码付款时请备注此订单号</div>
             </div>
             
@@ -453,6 +456,23 @@
         let currentEmail = '';
         let currentOrderCode = '';
         let currentPayMethod = 'wechat';
+        
+        // 客户端频率限制
+        let lastSubmitTime = 0;
+        const SUBMIT_COOLDOWN = 3000; // 3秒冷却时间
+
+        // HTML 转义，防止 XSS
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+
+        // 邮箱验证
+        function isValidEmail(email) {
+            const re = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            return re.test(email) && email.length <= 100;
+        }
 
         function showMessage(text, type) {
             messageDiv.textContent = text;
@@ -467,15 +487,12 @@
         function switchPayTab(method) {
             currentPayMethod = method;
             
-            // 更新选项卡状态
             document.querySelectorAll('.pay-tab').forEach(tab => tab.classList.remove('active'));
             document.querySelector(`.pay-tab.${method}`).classList.add('active');
             
-            // 更新内容区
             document.querySelectorAll('.pay-content').forEach(content => content.classList.remove('active'));
             document.getElementById('pay' + method.charAt(0).toUpperCase() + method.slice(1)).classList.add('active');
             
-            // 口令红包不需要显示订单号
             if (method === 'hongbao') {
                 orderSection.style.display = 'none';
             } else {
@@ -509,13 +526,27 @@
                 }
                 return true;
             } catch (error) {
-                console.error('检查库存失败:', error);
+                console.error('检查库存失败');
                 return true;
             }
         }
 
-        // 生成订单号（备用，主要由后端生成）
-        function generateOrderCode() {
+        // 从后端获取订单号
+        async function getOrderCodeFromBackend(email) {
+            try {
+                const response = await fetch('/api/generate-order', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: email })
+                });
+                const data = await response.json();
+                if (data.success && data.orderCode) {
+                    return data.orderCode;
+                }
+            } catch (error) {
+                console.error('获取订单号失败');
+            }
+            // 降级方案：客户端生成（仅用于显示）
             const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
             let code = '';
             for (let i = 0; i < 5; i++) {
@@ -524,13 +555,16 @@
             return code;
         }
 
-        function openPaymentModal(email) {
+        async function openPaymentModal(email) {
             currentEmail = email;
-            currentOrderCode = generateOrderCode();
-            orderCodeDiv.textContent = currentOrderCode;
-            hongbaoCodeInput.value = '';
             switchPayTab('wechat');
+            hongbaoCodeInput.value = '';
             paymentModal.classList.add('active');
+            
+            // 从后端获取订单号
+            orderCodeDiv.textContent = '加载中...';
+            currentOrderCode = await getOrderCodeFromBackend(email);
+            orderCodeDiv.textContent = currentOrderCode;
         }
 
         function closePaymentModal() {
@@ -540,12 +574,24 @@
         }
 
         async function confirmPayment() {
+            // 客户端频率限制检查
+            const now = Date.now();
+            if (now - lastSubmitTime < SUBMIT_COOLDOWN) {
+                alert(`请等待 ${Math.ceil((SUBMIT_COOLDOWN - (now - lastSubmitTime)) / 1000)} 秒后再提交`);
+                return;
+            }
+            
             // 口令红包需要填写口令
             let remark = currentOrderCode;
             if (currentPayMethod === 'hongbao') {
                 const hongbaoCode = hongbaoCodeInput.value.trim();
                 if (!hongbaoCode) {
                     alert('请填写口令红包的口令');
+                    return;
+                }
+                // 验证口令长度（防止恶意输入）
+                if (hongbaoCode.length > 50) {
+                    alert('口令过长，请检查');
                     return;
                 }
                 remark = '口令:' + hongbaoCode;
@@ -572,11 +618,12 @@
                 const data = await response.json();
 
                 if (response.ok && data.success) {
+                    lastSubmitTime = Date.now(); // 记录提交时间
                     let successMsg = '订单已提交！';
                     if (currentPayMethod === 'hongbao') {
                         successMsg += '口令已记录，';
                     } else {
-                        successMsg += `订单号：${currentOrderCode}，`;
+                        successMsg += `订单号：${escapeHtml(currentOrderCode)}，`;
                     }
                     successMsg += '管理员确认后将发送邀请。';
                     showMessage(successMsg, 'success');
@@ -598,6 +645,12 @@
             
             const email = emailInput.value.trim();
             if (!email) return;
+            
+            // 客户端邮箱验证
+            if (!isValidEmail(email)) {
+                showMessage('请输入有效的邮箱地址（不超过100字符）', 'error');
+                return;
+            }
 
             hideMessage();
             submitBtn.disabled = true;
@@ -612,7 +665,9 @@
             }
 
             submitBtn.textContent = '请稍候...';
-            openPaymentModal(email);
+            await openPaymentModal(email);
+            submitBtn.disabled = false;
+            submitBtn.textContent = '获取邀请';
         });
 
         paymentModal.addEventListener('click', (e) => {
