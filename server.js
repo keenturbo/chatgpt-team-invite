@@ -476,7 +476,17 @@ function isValidEmail(email) {
   const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
   return emailRegex.test(email);
 }
-
+// 查询可用名额（公开接口）
+app.get('/api/quota', (req, res) => {
+  const availableQuota = accountPool.reduce((sum, acc) => {
+    return sum + (acc.enabled ? Math.max(0, acc.quota - acc.used) : 0);
+  }, 0);
+  
+  res.json({
+    success: true,
+    availableQuota: availableQuota
+  });
+});
 // 健康检查
 app.get('/health', (req, res) => {
   const availableQuota = accountPool.reduce((sum, acc) => {
