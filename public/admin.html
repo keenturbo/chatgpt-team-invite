@@ -289,6 +289,71 @@
     .refresh-btn:hover {
       background: #5a6fd6;
     }
+    
+    /* 支付方式标签 */
+    .pay-method-tag {
+      display: inline-block;
+      padding: 2px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: 500;
+      margin-left: 8px;
+    }
+    .pay-method-tag.wechat {
+      background: #07c160;
+      color: white;
+    }
+    .pay-method-tag.alipay {
+      background: #1677ff;
+      color: white;
+    }
+    .pay-method-tag.hongbao {
+      background: #ff6b35;
+      color: white;
+    }
+    
+    /* 订单号/口令显示 */
+    .order-code-box {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      margin-top: 6px;
+    }
+    .order-code-label {
+      font-size: 11px;
+      color: #666;
+    }
+    .order-code-value {
+      font-family: 'Courier New', monospace;
+      font-weight: 600;
+      padding: 3px 8px;
+      border-radius: 4px;
+      font-size: 13px;
+    }
+    .order-code-value.code {
+      background: #667eea;
+      color: white;
+    }
+    .order-code-value.hongbao {
+      background: #ff6b35;
+      color: white;
+      letter-spacing: 1px;
+    }
+    
+    /* 复制按钮 */
+    .copy-btn {
+      background: none;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 10px;
+      cursor: pointer;
+      color: #666;
+    }
+    .copy-btn:hover {
+      background: #f0f0f0;
+      border-color: #999;
+    }
   </style>
 </head>
 <body>
@@ -493,6 +558,53 @@
       renderOrders();
     }
 
+    // 解析支付方式和备注
+    function parsePayInfo(order) {
+      const remark = order.remark || '';
+      const payMethod = order.payMethod || 'wechat';
+      
+      // 判断是否是口令红包
+      if (remark.startsWith('口令:')) {
+        return {
+          type: 'hongbao',
+          label: '口令红包',
+          value: remark.substring(3), // 去掉 "口令:" 前缀
+          tagClass: 'hongbao',
+          valueClass: 'hongbao'
+        };
+      }
+      
+      // 扫码支付（微信或支付宝）
+      const methodMap = {
+        'wechat': { label: '微信', tagClass: 'wechat' },
+        'alipay': { label: '支付宝', tagClass: 'alipay' },
+        'hongbao': { label: '口令红包', tagClass: 'hongbao' }
+      };
+      
+      const method = methodMap[payMethod] || methodMap['wechat'];
+      
+      return {
+        type: 'code',
+        label: method.label,
+        value: remark || '无',
+        tagClass: method.tagClass,
+        valueClass: 'code'
+      };
+    }
+
+    // 复制到剪贴板
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        // 简单提示
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = '已复制';
+        setTimeout(() => { btn.textContent = originalText; }, 1000);
+      }).catch(err => {
+        console.error('复制失败:', err);
+      });
+    }
+
     // 渲染订单列表
     function renderOrders() {
       const container = document.getElementById('orderList');
@@ -512,6 +624,7 @@
         }[order.status] || order.status;
         
         const time = new Date(order.createdAt).toLocaleString('zh-CN');
+        const payInfo = parsePayInfo(order);
         
         let actions = '';
         if (order.status === 'pending') {
@@ -521,11 +634,33 @@
           `;
         }
         
+        // 构建订单号/口令显示
+        let codeDisplay = '';
+        if (payInfo.type === 'hongbao') {
+          codeDisplay = `
+            <div class="order-code-box">
+              <span class="order-code-label">口令:</span>
+              <span class="order-code-value ${payInfo.valueClass}">${escapeHtml(payInfo.value)}</span>
+              <button class="copy-btn" onclick="copyToClipboard('${escapeHtml(payInfo.value)}')">复制</button>
+            </div>
+          `;
+        } else {
+          codeDisplay = `
+            <div class="order-code-box">
+              <span class="order-code-label">订单号:</span>
+              <span class="order-code-value ${payInfo.valueClass}">${escapeHtml(payInfo.value)}</span>
+            </div>
+          `;
+        }
+        
         return `
           <div class="order-item">
             <div class="order-info">
-              <div class="order-email">${escapeHtml(order.email)}</div>
-              <div class="order-remark">备注: ${escapeHtml(order.remark || '无')}</div>
+              <div class="order-email">
+                ${escapeHtml(order.email)}
+                <span class="pay-method-tag ${payInfo.tagClass}">${payInfo.label}</span>
+              </div>
+              ${codeDisplay}
               <div class="order-time">${time}</div>
             </div>
             <span class="status-badge ${statusClass}">${statusText}</span>
@@ -543,7 +678,6 @@
       document.getElementById('pendingOrders').textContent = pendingCount;
       document.getElementById('pendingBadge').textContent = pendingCount;
       
-      // 如果有待确认订单，显示提示
       if (pendingCount > 0) {
         document.getElementById('pendingBadge').style.display = 'inline-block';
       } else {
@@ -565,7 +699,7 @@
         if (data.success) {
           showMessage('orderMessage', '订单已确认，邀请已发送', 'success');
           loadOrders();
-          loadAccounts(); // 刷新账号使用情况
+          loadAccounts();
         } else {
           showMessage('orderMessage', data.error || '确认失败', 'error');
         }
@@ -710,7 +844,7 @@
     function logout() {
       localStorage.removeItem('adminToken');
       authToken = null;
-      document.getElementById('loginSection').classList.remove('hidden');
+document.getElementById('loginSection').classList.remove('hidden');
       document.getElementById('adminSection').classList.add('hidden');
     }
 
