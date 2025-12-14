@@ -1,0 +1,484 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>管理后台 - ChatGPT Team 邀请</title>
+  <style>
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+    .container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    h1 {
+      color: #fff;
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 24px;
+    }
+    .card {
+      background: rgba(255, 255, 255, 0.95);
+      border-radius: 16px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.3);
+    }
+    .card h2 {
+      color: #1a1a2e;
+      margin-bottom: 20px;
+      font-size: 18px;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 10px;
+    }
+    .form-group {
+      margin-bottom: 15px;
+    }
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      color: #333;
+      font-weight: 500;
+    }
+    .form-group input {
+      width: 100%;
+      padding: 12px 15px;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      font-size: 14px;
+      transition: border-color 0.3s;
+    }
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+    }
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    .btn-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 20px rgba(102, 126, 234, 0.4);
+    }
+    .btn-danger {
+      background: #e74c3c;
+      color: white;
+      padding: 8px 16px;
+      font-size: 12px;
+    }
+    .btn-danger:hover {
+      background: #c0392b;
+    }
+    .btn-success {
+      background: #27ae60;
+      color: white;
+      padding: 8px 16px;
+      font-size: 12px;
+    }
+    .account-list {
+      margin-top: 20px;
+    }
+    .account-item {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 15px;
+      margin-bottom: 10px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    .account-info {
+      flex: 1;
+      min-width: 200px;
+    }
+    .account-name {
+      font-weight: 600;
+      color: #1a1a2e;
+      margin-bottom: 5px;
+    }
+    .account-id {
+      font-size: 12px;
+      color: #666;
+      font-family: monospace;
+    }
+    .account-quota {
+      font-size: 14px;
+      color: #667eea;
+      font-weight: 500;
+    }
+    .account-actions {
+      display: flex;
+      gap: 8px;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 500;
+    }
+    .status-active {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status-exhausted {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .login-form {
+      max-width: 400px;
+      margin: 100px auto;
+    }
+    .hidden {
+      display: none;
+    }
+    .message {
+      padding: 12px 15px;
+      border-radius: 8px;
+      margin-bottom: 15px;
+      font-size: 14px;
+    }
+    .message-success {
+      background: #d4edda;
+      color: #155724;
+    }
+    .message-error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 10px;
+      text-align: center;
+    }
+    .stat-value {
+      font-size: 28px;
+      font-weight: 700;
+    }
+    .stat-label {
+      font-size: 12px;
+      opacity: 0.9;
+      margin-top: 5px;
+    }
+    .logout-btn {
+      position: absolute;
+      top: 20px;
+      right: 20px;
+      background: rgba(255,255,255,0.2);
+      color: white;
+      border: 1px solid rgba(255,255,255,0.3);
+      padding: 8px 16px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+    .logout-btn:hover {
+      background: rgba(255,255,255,0.3);
+    }
+  </style>
+</head>
+<body>
+  <!-- 登录表单 -->
+  <div id="loginSection" class="login-form">
+    <div class="card">
+      <h2>管理员登录</h2>
+      <div id="loginMessage"></div>
+      <form id="loginForm">
+        <div class="form-group">
+          <label>用户名</label>
+          <input type="text" id="username" required autocomplete="username">
+        </div>
+        <div class="form-group">
+          <label>密码</label>
+          <input type="password" id="password" required autocomplete="current-password">
+        </div>
+        <button type="submit" class="btn btn-primary" style="width: 100%; margin-top: 10px;">登录</button>
+      </form>
+    </div>
+  </div>
+
+  <!-- 管理面板 -->
+  <div id="adminSection" class="container hidden">
+    <button class="logout-btn" onclick="logout()">退出登录</button>
+    <h1>ChatGPT Team 邀请管理</h1>
+    
+    <!-- 统计卡片 -->
+    <div class="stats">
+      <div class="stat-card">
+        <div class="stat-value" id="totalAccounts">0</div>
+        <div class="stat-label">账号总数</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="activeAccounts">0</div>
+        <div class="stat-label">可用账号</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-value" id="totalQuota">0</div>
+        <div class="stat-label">剩余名额</div>
+      </div>
+    </div>
+
+    <!-- 添加账号 -->
+    <div class="card">
+      <h2>添加账号</h2>
+      <div id="addMessage"></div>
+      <form id="addAccountForm">
+        <div class="form-group">
+          <label>账号名称（备注）</label>
+          <input type="text" id="accountName" placeholder="如：主账号、备用1" required>
+        </div>
+        <div class="form-group">
+          <label>ChatGPT Account ID</label>
+          <input type="text" id="accountId" placeholder="fb127d59-bc70-4291-..." required>
+        </div>
+        <div class="form-group">
+          <label>ChatGPT Token</label>
+          <input type="text" id="accountToken" placeholder="eyJhbGciOiJSUzI1NiIs..." required>
+        </div>
+        <div class="form-group">
+          <label>邀请名额（默认4）</label>
+          <input type="number" id="accountQuota" value="4" min="1" max="10">
+        </div>
+        <button type="submit" class="btn btn-primary">添加账号</button>
+      </form>
+    </div>
+
+    <!-- 账号列表 -->
+    <div class="card">
+      <h2>账号列表</h2>
+      <div id="accountList" class="account-list">
+        <p style="color: #666; text-align: center;">暂无账号，请添加</p>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let authToken = localStorage.getItem('adminToken');
+
+    // 检查登录状态
+    if (authToken) {
+      showAdminPanel();
+      loadAccounts();
+    }
+
+    // 登录表单提交
+    document.getElementById('loginForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const username = document.getElementById('username').value;
+      const password = document.getElementById('password').value;
+
+      try {
+        const res = await fetch('/api/admin/login', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ username, password })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          authToken = data.token;
+          localStorage.setItem('adminToken', authToken);
+          showAdminPanel();
+          loadAccounts();
+        } else {
+          showMessage('loginMessage', data.error || '登录失败', 'error');
+        }
+      } catch (err) {
+        showMessage('loginMessage', '网络错误', 'error');
+      }
+    });
+
+    // 添加账号表单提交
+    document.getElementById('addAccountForm').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      const name = document.getElementById('accountName').value;
+      const accountId = document.getElementById('accountId').value;
+      const token = document.getElementById('accountToken').value;
+      const quota = parseInt(document.getElementById('accountQuota').value) || 4;
+
+      try {
+        const res = await fetch('/api/admin/accounts', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${authToken}`
+          },
+          body: JSON.stringify({ name, accountId, token, quota })
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          showMessage('addMessage', '账号添加成功', 'success');
+          document.getElementById('addAccountForm').reset();
+          document.getElementById('accountQuota').value = '4';
+          loadAccounts();
+        } else {
+          showMessage('addMessage', data.error || '添加失败', 'error');
+        }
+      } catch (err) {
+        showMessage('addMessage', '网络错误', 'error');
+      }
+    });
+
+    // 加载账号列表
+    async function loadAccounts() {
+      try {
+        const res = await fetch('/api/admin/accounts', {
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          renderAccounts(data.accounts);
+          updateStats(data.accounts);
+        } else if (res.status === 401) {
+          logout();
+        }
+      } catch (err) {
+        console.error('加载账号失败:', err);
+      }
+    }
+
+    // 渲染账号列表
+    function renderAccounts(accounts) {
+      const container = document.getElementById('accountList');
+      
+      if (!accounts || accounts.length === 0) {
+        container.innerHTML = '<p style="color: #666; text-align: center;">暂无账号，请添加</p>';
+        return;
+      }
+
+      container.innerHTML = accounts.map(acc => {
+        const remaining = acc.quota - acc.used;
+        const isExhausted = remaining <= 0;
+        const statusClass = isExhausted ? 'status-exhausted' : 'status-active';
+        const statusText = isExhausted ? '已用完' : '可用';
+        
+        return `
+          <div class="account-item">
+            <div class="account-info">
+              <div class="account-name">${escapeHtml(acc.name)}</div>
+              <div class="account-id">ID: ${acc.accountId.substring(0, 8)}...</div>
+              <div class="account-quota">名额: ${acc.used}/${acc.quota} 已使用</div>
+            </div>
+            <span class="status-badge ${statusClass}">${statusText}</span>
+            <div class="account-actions">
+              <button class="btn btn-success" onclick="resetQuota('${acc.id}')">重置</button>
+              <button class="btn btn-danger" onclick="deleteAccount('${acc.id}')">删除</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    // 更新统计
+    function updateStats(accounts) {
+      const total = accounts.length;
+      const active = accounts.filter(a => a.enabled && (a.quota - a.used) > 0).length;
+      const quota = accounts.reduce((sum, a) => sum + Math.max(0, a.quota - a.used), 0);
+      
+      document.getElementById('totalAccounts').textContent = total;
+      document.getElementById('activeAccounts').textContent = active;
+      document.getElementById('totalQuota').textContent = quota;
+    }
+
+    // 删除账号
+    async function deleteAccount(id) {
+      if (!confirm('确定要删除这个账号吗？')) return;
+      
+      try {
+        const res = await fetch(`/api/admin/accounts/${id}`, {
+          method: 'DELETE',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          loadAccounts();
+        } else {
+          alert(data.error || '删除失败');
+        }
+      } catch (err) {
+        alert('网络错误');
+      }
+    }
+
+    // 重置名额
+    async function resetQuota(id) {
+      if (!confirm('确定要重置这个账号的使用次数吗？')) return;
+      
+      try {
+        const res = await fetch(`/api/admin/accounts/${id}/reset`, {
+          method: 'POST',
+          headers: { 'Authorization': `Bearer ${authToken}` }
+        });
+        const data = await res.json();
+        
+        if (data.success) {
+          loadAccounts();
+        } else {
+          alert(data.error || '重置失败');
+        }
+      } catch (err) {
+        alert('网络错误');
+      }
+    }
+
+    // 显示管理面板
+    function showAdminPanel() {
+      document.getElementById('loginSection').classList.add('hidden');
+      document.getElementById('adminSection').classList.remove('hidden');
+    }
+
+    // 退出登录
+    function logout() {
+      localStorage.removeItem('adminToken');
+      authToken = null;
+      document.getElementById('loginSection').classList.remove('hidden');
+      document.getElementById('adminSection').classList.add('hidden');
+    }
+
+    // 显示消息
+    function showMessage(elementId, message, type) {
+      const el = document.getElementById(elementId);
+      el.innerHTML = `<div class="message message-${type}">${escapeHtml(message)}</div>`;
+      setTimeout(() => { el.innerHTML = ''; }, 3000);
+    }
+
+    // HTML转义
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+  </script>
+</body>
+</html>
