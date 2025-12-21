@@ -44,7 +44,7 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 12px;
-            margin-bottom: 24px; /* 减少底部间距，给库存提示留位置 */
+            margin-bottom: 24px;
         }
         .stat-card {
             background: rgba(255,255,255,0.6);
@@ -105,7 +105,7 @@
             margin-top: 6px;
         }
 
-        /* 库存状态提示 - 美化版 */
+        /* 库存状态提示 - 始终显示 */
         .quota-info { 
             padding: 12px; 
             border-radius: 12px; 
@@ -113,8 +113,12 @@
             font-weight: 500;
             margin-bottom: 24px; 
             text-align: center; 
-            display: none;
+            display: block; /* 默认显示 */
             transition: all 0.3s;
+        }
+        .quota-info.normal {
+            background: #e3f2fd; color: #1565c0;
+            border: 1px solid #bbdefb;
         }
         .quota-info.low { 
             background: #fff8e1; color: #f57f17; 
@@ -215,7 +219,7 @@
         </div>
 
         <!-- 库存状态提示 -->
-        <div id="quotaInfo" class="quota-info" style="display: none;"></div>
+        <div id="quotaInfo" class="quota-info" style="display: none;">加载中...</div>
 
         <form id="inviteForm">
             <div class="form-group">
@@ -298,7 +302,6 @@
         const quotaInfoDiv = document.getElementById('quotaInfo');
         const hongbaoCodeInput = document.getElementById('hongbaoCode');
         
-        // 统计元素
         const statSold = document.getElementById('statSold');
         const statSaved = document.getElementById('statSaved');
         const statRunDay = document.getElementById('statRunDay');
@@ -336,7 +339,6 @@
             orderSection.style.display = (method === 'hongbao') ? 'none' : 'block';
         }
 
-        // 核心：检查库存逻辑
         async function checkQuotaAndStats() {
             try {
                 const response = await fetch('/api/quota');
@@ -344,27 +346,28 @@
                 if (data.success) {
                     const quota = data.availableQuota;
                     
-                    // 库存提示逻辑
+                    // 修改：只要有库存就显示，<=5 显示紧迫感
                     if (quota <= 0) {
                         quotaInfoDiv.textContent = '⚠️ 当前名额已满，请稍后再试';
                         quotaInfoDiv.className = 'quota-info out';
                         quotaInfoDiv.style.display = 'block';
                         submitBtn.disabled = true;
                         submitBtn.textContent = '暂无名额';
-                    } else if (quota <= 3) {
+                    } else if (quota <= 5) {
                         quotaInfoDiv.textContent = `🔥 仅剩 ${quota} 个名额，先到先得`;
                         quotaInfoDiv.className = 'quota-info low';
                         quotaInfoDiv.style.display = 'block';
                         submitBtn.disabled = false;
                         submitBtn.textContent = '获取邀请';
                     } else {
-                        // 库存充足时不显示提示（保持简洁），或者可以显示 "名额充足"
-                        quotaInfoDiv.style.display = 'none';
+                        // 充足时显示普通提示
+                        quotaInfoDiv.textContent = `✅ 剩余名额：${quota} 个`;
+                        quotaInfoDiv.className = 'quota-info normal';
+                        quotaInfoDiv.style.display = 'block';
                         submitBtn.disabled = false;
                         submitBtn.textContent = '获取邀请';
                     }
 
-                    // 统计数据
                     const realSold = data.soldCount || 0;
                     const displaySold = soldBase + realSold;
                     statSold.textContent = displaySold.toLocaleString();
@@ -479,17 +482,12 @@
             submitBtn.disabled = true;
             submitBtn.textContent = '请稍候...';
             
-            // 提交前再次检查库存
             try {
                 const response = await fetch('/api/quota');
                 const data = await response.json();
                 if (data.success && data.availableQuota <= 0) {
-                    showMessage('名额已满，请等待补充', 'error');
-                    quotaInfoDiv.textContent = '⚠️ 当前名额已满，请稍后再试';
-                    quotaInfoDiv.className = 'quota-info out';
-                    quotaInfoDiv.style.display = 'block';
-                    submitBtn.disabled = true;
-                    submitBtn.textContent = '暂无名额';
+                    showMessage('名额已满', 'error');
+                    submitBtn.disabled = false;
                     return;
                 }
             } catch(e) {}
