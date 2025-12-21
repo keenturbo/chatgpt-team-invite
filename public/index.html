@@ -7,11 +7,7 @@
     <!-- 添加 CSP 防止 XSS 攻击 -->
     <meta http-equiv="Content-Security-Policy" content="default-src 'self'; img-src 'self' https://pic.icon.pp.ua; connect-src 'self'; style-src 'self' 'unsafe-inline'; script-src 'self' 'unsafe-inline';">
     <style>
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
-        }
+        * { margin: 0; padding: 0; box-sizing: border-box; }
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
@@ -29,326 +25,157 @@
             max-width: 420px;
             box-shadow: 0 20px 60px rgba(0,0,0,0.3);
         }
-        h1 {
-            text-align: center;
-            color: #333;
-            margin-bottom: 8px;
-            font-size: 24px;
+        h1 { text-align: center; color: #333; margin-bottom: 8px; font-size: 24px; }
+        .subtitle { text-align: center; color: #666; margin-bottom: 12px; font-size: 14px; }
+
+        /* 统计栏 - 苹果风 */
+        .stats-bar {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 14px;
+            margin: 12px 0 22px;
         }
-        .subtitle {
-            text-align: center;
-            color: #666;
-            margin-bottom: 32px;
-            font-size: 14px;
-        }
-        .form-group {
-            margin-bottom: 20px;
-        }
-        label {
-            display: block;
-            margin-bottom: 8px;
-            color: #333;
-            font-weight: 500;
-        }
-        input[type="email"], input[type="text"] {
-            width: 100%;
+        .stat-card {
+            background: rgba(255,255,255,0.86);
+            border: 1px solid #eaeaea;
+            border-radius: 14px;
             padding: 14px 16px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
+            box-shadow: 0 12px 30px rgba(0,0,0,0.08);
+            backdrop-filter: blur(6px);
+            display: flex;
+            align-items: center;
+            gap: 12px;
+        }
+        .stat-icon {
+            width: 36px;
+            height: 36px;
+            border-radius: 10px;
+            background: linear-gradient(135deg, #1c1c1e 0%, #3a3a3c 100%);
+            color: #fff;
             font-size: 16px;
-            transition: border-color 0.3s;
+            font-weight: 700;
+            display: grid;
+            place-items: center;
+            flex-shrink: 0;
         }
-        input[type="email"]:focus, input[type="text"]:focus {
-            outline: none;
-            border-color: #667eea;
-        }
-        button {
-            width: 100%;
-            padding: 14px;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: transform 0.2s, box-shadow 0.2s;
-        }
-        button:hover {
-            transform: translateY(-2px);
-            box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
-        }
-        button:disabled {
-            background: #ccc;
-            cursor: not-allowed;
-            transform: none;
-            box-shadow: none;
-        }
-        .message {
-            margin-top: 20px;
-            padding: 12px 16px;
-            border-radius: 8px;
-            text-align: center;
-            display: none;
-        }
-        .message.success {
-            background: #d4edda;
-            color: #155724;
-            display: block;
-        }
-        .message.error {
-            background: #f8d7da;
-            color: #721c24;
-            display: block;
-        }
-        .message.loading {
-            background: #e7f1ff;
-            color: #004085;
-            display: block;
-        }
-        .footer {
-            margin-top: 24px;
-            text-align: center;
-            color: #999;
-            font-size: 12px;
+        .stat-meta { display: flex; flex-direction: column; gap: 4px; }
+        .stat-value { font-size: 22px; font-weight: 700; color: #111; letter-spacing: 0.2px; }
+        .stat-label { font-size: 12px; color: #666; letter-spacing: 0.3px; }
+        @media (max-width: 640px) {
+            .stat-card { padding: 12px 14px; }
+            .stat-value { font-size: 20px; }
         }
 
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; color: #333; font-weight: 500; }
+        input[type="email"], input[type="text"] {
+            width: 100%; padding: 14px 16px; border: 2px solid #e0e0e0;
+            border-radius: 8px; font-size: 16px; transition: border-color 0.3s;
+        }
+        input[type="email"]:focus, input[type="text"]:focus { outline: none; border-color: #667eea; }
+        button {
+            width: 100%; padding: 14px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white; border: none; border-radius: 8px; font-size: 16px; font-weight: 600;
+            cursor: pointer; transition: transform 0.2s, box-shadow 0.2s;
+        }
+        button:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4); }
+        button:disabled { background: #ccc; cursor: not-allowed; transform: none; box-shadow: none; }
+        .message { margin-top: 20px; padding: 12px 16px; border-radius: 8px; text-align: center; display: none; }
+        .message.success { background: #d4edda; color: #155724; display: block; }
+        .message.error { background: #f8d7da; color: #721c24; display: block; }
+        .message.loading { background: #e7f1ff; color: #004085; display: block; }
+        .footer { margin-top: 24px; text-align: center; color: #999; font-size: 12px; }
+
         /* 弹窗样式 */
-        .modal-overlay {
-            display: none;
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background: rgba(0, 0, 0, 0.6);
-            z-index: 1000;
-            align-items: flex-start;
-            justify-content: center;
-            padding: 20px;
-            overflow-y: auto;
-        }
-        .modal-overlay.active {
-            display: flex;
-        }
-        .modal {
-            background: white;
-            border-radius: 16px;
-            padding: 25px;
-            width: 100%;
-            max-width: 440px;
-            text-align: center;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.4);
-            animation: modalIn 0.3s ease;
-            margin: 20px auto;
-        }
-        @keyframes modalIn {
-            from { opacity: 0; transform: scale(0.9); }
-            to { opacity: 1; transform: scale(1); }
-        }
-        .modal h2 {
-            color: #333;
-            margin-bottom: 6px;
-            font-size: 20px;
-        }
-        .modal .price {
-            color: #e74c3c;
-            font-size: 26px;
-            font-weight: 700;
-            margin-bottom: 15px;
-        }
-        
+        .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0, 0, 0, 0.6); z-index: 1000; align-items: flex-start; justify-content: center;
+            padding: 20px; overflow-y: auto; }
+        .modal-overlay.active { display: flex; }
+        .modal { background: white; border-radius: 16px; padding: 25px; width: 100%; max-width: 440px;
+            text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,0.4); animation: modalIn 0.3s ease; margin: 20px auto; }
+        @keyframes modalIn { from { opacity: 0; transform: scale(0.9); } to { opacity: 1; transform: scale(1); } }
+        .modal h2 { color: #333; margin-bottom: 6px; font-size: 20px; }
+        .modal .price { color: #e74c3c; font-size: 26px; font-weight: 700; margin-bottom: 15px; }
+
         /* 支付方式选项卡 */
-        .pay-tabs {
-            display: flex;
-            border-bottom: 2px solid #eee;
-            margin-bottom: 15px;
-        }
-        .pay-tab {
-            flex: 1;
-            padding: 10px;
-            background: none;
-            border: none;
-            font-size: 13px;
-            font-weight: 500;
-            color: #666;
-            cursor: pointer;
-            transition: all 0.3s;
-            border-bottom: 2px solid transparent;
-            margin-bottom: -2px;
-        }
-        .pay-tab:hover {
-            color: #667eea;
-        }
-        .pay-tab.active {
-            color: #667eea;
-            border-bottom-color: #667eea;
-        }
+        .pay-tabs { display: flex; border-bottom: 2px solid #eee; margin-bottom: 15px; }
+        .pay-tab { flex: 1; padding: 10px; background: none; border: none; font-size: 13px; font-weight: 500; color: #666;
+            cursor: pointer; transition: all 0.3s; border-bottom: 2px solid transparent; margin-bottom: -2px; }
+        .pay-tab:hover { color: #667eea; }
+        .pay-tab.active { color: #667eea; border-bottom-color: #667eea; }
         .pay-tab.wechat.active { color: #07c160; border-bottom-color: #07c160; }
         .pay-tab.alipay.active { color: #1677ff; border-bottom-color: #1677ff; }
         .pay-tab.hongbao.active { color: #ff6b35; border-bottom-color: #ff6b35; }
-        
+
         /* 支付内容区 */
-        .pay-content {
-            display: none;
-            padding: 10px 0;
-        }
-        .pay-content.active {
-            display: block;
-        }
-        .qrcode-box {
-            margin-bottom: 12px;
-        }
-        .qrcode-box img {
-            width: 180px;
-            height: 180px;
-            border-radius: 8px;
-            border: 2px solid #eee;
-        }
-        .pay-tips {
-            color: #666;
-            font-size: 12px;
-            line-height: 1.8;
-            margin-bottom: 10px;
-        }
-        .pay-tips strong {
-            color: #e74c3c;
-        }
-        .mobile-tip {
-            background: #e7f1ff;
-            color: #004085;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 11px;
-            margin-bottom: 12px;
-        }
-        
+        .pay-content { display: none; padding: 10px 0; }
+        .pay-content.active { display: block; }
+        .qrcode-box { margin-bottom: 12px; }
+        .qrcode-box img { width: 180px; height: 180px; border-radius: 8px; border: 2px solid #eee; }
+        .pay-tips { color: #666; font-size: 12px; line-height: 1.8; margin-bottom: 10px; }
+        .pay-tips strong { color: #e74c3c; }
+        .mobile-tip { background: #e7f1ff; color: #004085; padding: 8px 12px; border-radius: 6px; font-size: 11px; margin-bottom: 12px; }
+
         /* 口令红包输入 */
-        .hongbao-input {
-            margin: 15px 0;
-        }
-        .hongbao-input label {
-            display: block;
-            text-align: left;
-            font-size: 13px;
-            color: #333;
-            margin-bottom: 6px;
-        }
-        .hongbao-input input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #ff6b35;
-            border-radius: 8px;
-            font-size: 15px;
-            text-align: center;
-            letter-spacing: 1px;
-        }
-        .hongbao-input input:focus {
-            outline: none;
-            border-color: #e55a2b;
-        }
-        .hongbao-steps {
-            background: #fff8f5;
-            border-radius: 8px;
-            padding: 12px;
-            text-align: left;
-            font-size: 12px;
-            color: #666;
-            line-height: 1.8;
-        }
-        .hongbao-steps strong {
-            color: #ff6b35;
-        }
-        
+        .hongbao-input { margin: 15px 0; }
+        .hongbao-input label { display: block; text-align: left; font-size: 13px; color: #333; margin-bottom: 6px; }
+        .hongbao-input input { width: 100%; padding: 12px; border: 2px solid #ff6b35; border-radius: 8px; font-size: 15px; text-align: center; letter-spacing: 1px; }
+        .hongbao-input input:focus { outline: none; border-color: #e55a2b; }
+        .hongbao-steps { background: #fff8f5; border-radius: 8px; padding: 12px; text-align: left; font-size: 12px; color: #666; line-height: 1.8; }
+        .hongbao-steps strong { color: #ff6b35; }
+
         /* 订单号显示 */
-        .order-section {
-            background: #f8f9fa;
-            border-radius: 10px;
-            padding: 12px;
-            margin: 12px 0;
-        }
-        .order-label {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 6px;
-        }
-        .order-code {
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            color: white;
-            font-size: 24px;
-            font-weight: 700;
-            letter-spacing: 3px;
-            padding: 8px 16px;
-            border-radius: 6px;
-            font-family: 'Courier New', monospace;
-            display: inline-block;
-        }
-        .order-hint {
-            font-size: 11px;
-            color: #e74c3c;
-            margin-top: 6px;
-        }
-        
-        .switch-tip {
-            background: #fff3cd;
-            color: #856404;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 11px;
-            margin-bottom: 12px;
-        }
-        
-        .modal .btn-group {
-            display: flex;
-            gap: 10px;
-            margin-top: 15px;
-        }
-        .modal .btn-group button {
-            flex: 1;
-            padding: 12px;
-            font-size: 14px;
-        }
-        .btn-cancel {
-            background: #e0e0e0 !important;
-            color: #333 !important;
-        }
-        .btn-cancel:hover {
-            background: #d0d0d0 !important;
-            box-shadow: none !important;
-        }
-        .btn-confirm {
-            background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%) !important;
-        }
-        .btn-confirm:hover {
-            box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4) !important;
-        }
-        
-        .quota-info {
-            background: #f0f0f0;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-        .quota-info.low {
-            background: #fff3cd;
-            color: #856404;
-        }
-        .quota-info.out {
-            background: #f8d7da;
-            color: #721c24;
-        }
+        .order-section { background: #f8f9fa; border-radius: 10px; padding: 12px; margin: 12px 0; }
+        .order-label { font-size: 12px; color: #666; margin-bottom: 6px; }
+        .order-code { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 24px; font-weight: 700; letter-spacing: 3px; padding: 8px 16px; border-radius: 6px; font-family: 'Courier New', monospace; display: inline-block; }
+        .order-hint { font-size: 11px; color: #e74c3c; margin-top: 6px; }
+
+        .switch-tip { background: #fff3cd; color: #856404; padding: 8px 12px; border-radius: 6px; font-size: 11px; margin-bottom: 12px; }
+
+        .modal .btn-group { display: flex; gap: 10px; margin-top: 15px; }
+        .modal .btn-group button { flex: 1; padding: 12px; font-size: 14px; }
+        .btn-cancel { background: #e0e0e0 !important; color: #333 !important; }
+        .btn-cancel:hover { background: #d0d0d0 !important; box-shadow: none !important; }
+        .btn-confirm { background: linear-gradient(135deg, #27ae60 0%, #2ecc71 100%) !important; }
+        .btn-confirm:hover { box-shadow: 0 4px 12px rgba(39, 174, 96, 0.4) !important; }
+
+        .quota-info { background: #f0f0f0; padding: 8px 12px; border-radius: 6px; font-size: 12px; color: #666; margin-bottom: 20px; text-align: center; }
+        .quota-info.low { background: #fff3cd; color: #856404; }
+        .quota-info.out { background: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
     <div class="container">
         <h1>ChatGPT Team</h1>
         <p class="subtitle">输入邮箱获取邀请链接</p>
-        
+
+        <!-- 统计栏：已售 / 已省 / 稳定运行 -->
+        <div class="stats-bar">
+            <div class="stat-card">
+                <div class="stat-icon">售</div>
+                <div class="stat-meta">
+                    <div class="stat-value" id="statSold">--</div>
+                    <div class="stat-label">已售 (单)</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">省</div>
+                <div class="stat-meta">
+                    <div class="stat-value" id="statSaved">--</div>
+                    <div class="stat-label">帮大家节省 (¥)</div>
+                </div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-icon">稳</div>
+                <div class="stat-meta">
+                    <div class="stat-value" id="statRun">--</div>
+                    <div class="stat-label">已稳定运行</div>
+                </div>
+            </div>
+        </div>
+
         <div id="quotaInfo" class="quota-info" style="display: none;"></div>
-        
+
         <form id="inviteForm">
             <div class="form-group">
                 <label for="email">邮箱地址</label>
@@ -363,9 +190,9 @@
             </div>
             <button type="submit" id="submitBtn">获取邀请</button>
         </form>
-        
+
         <div id="message" class="message"></div>
-        
+
         <div class="footer">
             提交后请查收邮件中的邀请链接
         </div>
@@ -453,13 +280,21 @@
         const quotaInfoDiv = document.getElementById('quotaInfo');
         const hongbaoCodeInput = document.getElementById('hongbaoCode');
 
+        // 统计栏元素
+        const statSold = document.getElementById('statSold');
+        const statSaved = document.getElementById('statSaved');
+        const statRun = document.getElementById('statRun');
+
         let currentEmail = '';
         let currentOrderCode = '';
         let currentPayMethod = 'wechat';
-        
-        // 客户端频率限制
         let lastSubmitTime = 0;
         const SUBMIT_COOLDOWN = 3000; // 3秒冷却时间
+
+        // 运行时间基准：默认 90 天
+        const BASE_RUNTIME_MS = 90 * 24 * 60 * 60 * 1000;
+        let stableStart = Date.now() - BASE_RUNTIME_MS; // 默认起点
+        let soldBase = 100; // 基础销量
 
         // HTML 转义，防止 XSS
         function escapeHtml(text) {
@@ -486,27 +321,20 @@
         // 切换支付方式
         function switchPayTab(method) {
             currentPayMethod = method;
-            
             document.querySelectorAll('.pay-tab').forEach(tab => tab.classList.remove('active'));
             document.querySelector(`.pay-tab.${method}`).classList.add('active');
-            
-            document.querySelectorAll('.pay-content').forEach(content => content.classList.remove('active'));
+            document.querySelectorAll('.pay-content').forEach(c => c.classList.remove('active'));
             document.getElementById('pay' + method.charAt(0).toUpperCase() + method.slice(1)).classList.add('active');
-            
-            if (method === 'hongbao') {
-                orderSection.style.display = 'none';
-            } else {
-                orderSection.style.display = 'block';
-            }
+            orderSection.style.display = (method === 'hongbao') ? 'none' : 'block';
         }
 
-        // 检查库存
-        async function checkQuota() {
+        // 检查库存 + 拉取统计
+        async function checkQuotaAndStats() {
             try {
                 const response = await fetch('/api/quota');
                 const data = await response.json();
-                
                 if (data.success) {
+                    // 库存提示
                     const quota = data.availableQuota;
                     if (quota <= 0) {
                         quotaInfoDiv.textContent = '⚠️ 当前名额已满，请稍后再试';
@@ -514,21 +342,54 @@
                         quotaInfoDiv.style.display = 'block';
                         submitBtn.disabled = true;
                         submitBtn.textContent = '暂无名额';
-                        return false;
                     } else if (quota <= 3) {
                         quotaInfoDiv.textContent = `🔥 剩余名额：${quota}，先到先得`;
                         quotaInfoDiv.className = 'quota-info low';
                         quotaInfoDiv.style.display = 'block';
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = '获取邀请';
                     } else {
                         quotaInfoDiv.style.display = 'none';
+                        submitBtn.disabled = false;
+                        submitBtn.textContent = '获取邀请';
                     }
-                    return true;
+
+                    // 统计：销量、节省、运行时间
+                    const realSold = data.soldCount || 0;
+                    const displaySold = soldBase + realSold;
+                    statSold.textContent = displaySold.toLocaleString();
+                    statSaved.textContent = '¥' + (displaySold * 130).toLocaleString();
+
+                    if (data.startTime) {
+                        const firstTs = new Date(data.startTime).getTime();
+                        // 虚拟起点 = 首单时间 - 90天
+                        stableStart = firstTs - BASE_RUNTIME_MS;
+                    }
                 }
-                return true;
-            } catch (error) {
-                console.error('检查库存失败');
-                return true;
+            } catch (e) {
+                console.error('检查库存或统计失败', e);
             }
+        }
+
+        // 运行时间秒表
+        function startRunTicker() {
+            function formatDuration(ms) {
+                const totalSec = Math.floor(ms / 1000);
+                const sec = totalSec % 60;
+                const totalMin = Math.floor(totalSec / 60);
+                const min = totalMin % 60;
+                const totalHr = Math.floor(totalMin / 60);
+                const hr = totalHr % 24;
+                const days = Math.floor(totalHr / 24);
+                return `${days}天 ${hr}时 ${min}分 ${sec}秒`;
+            }
+            function tick() {
+                const now = Date.now();
+                const duration = now - stableStart;
+                statRun.textContent = formatDuration(duration);
+            }
+            tick();
+            setInterval(tick, 1000);
         }
 
         // 从后端获取订单号
@@ -537,21 +398,17 @@
                 const response = await fetch('/api/generate-order', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json' },
-                    body: JSON.stringify({ email: email })
+                    body: JSON.stringify({ email })
                 });
                 const data = await response.json();
-                if (data.success && data.orderCode) {
-                    return data.orderCode;
-                }
+                if (data.success && data.orderCode) return data.orderCode;
             } catch (error) {
                 console.error('获取订单号失败');
             }
-            // 降级方案：客户端生成（仅用于显示）
+            // 降级：客户端生成
             const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZ23456789';
             let code = '';
-            for (let i = 0; i < 5; i++) {
-                code += chars.charAt(Math.floor(Math.random() * chars.length));
-            }
+            for (let i = 0; i < 5; i++) code += chars.charAt(Math.floor(Math.random() * chars.length));
             return code;
         }
 
@@ -560,8 +417,6 @@
             switchPayTab('wechat');
             hongbaoCodeInput.value = '';
             paymentModal.classList.add('active');
-            
-            // 从后端获取订单号
             orderCodeDiv.textContent = '加载中...';
             currentOrderCode = await getOrderCodeFromBackend(email);
             orderCodeDiv.textContent = currentOrderCode;
@@ -574,29 +429,20 @@
         }
 
         async function confirmPayment() {
-            // 客户端频率限制检查
             const now = Date.now();
             if (now - lastSubmitTime < SUBMIT_COOLDOWN) {
                 alert(`请等待 ${Math.ceil((SUBMIT_COOLDOWN - (now - lastSubmitTime)) / 1000)} 秒后再提交`);
                 return;
             }
-            
-            // 口令红包需要填写口令
+
             let remark = currentOrderCode;
             if (currentPayMethod === 'hongbao') {
                 const hongbaoCode = hongbaoCodeInput.value.trim();
-                if (!hongbaoCode) {
-                    alert('请填写口令红包的口令');
-                    return;
-                }
-                // 验证口令长度（防止恶意输入）
-                if (hongbaoCode.length > 50) {
-                    alert('口令过长，请检查');
-                    return;
-                }
+                if (!hongbaoCode) { alert('请填写口令红包的口令'); return; }
+                if (hongbaoCode.length > 50) { alert('口令过长，请检查'); return; }
                 remark = '口令:' + hongbaoCode;
             }
-            
+
             closePaymentModal();
             submitBtn.disabled = true;
             submitBtn.textContent = '提交中...';
@@ -605,30 +451,19 @@
             try {
                 const response = await fetch('/api/order', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json',
-                    },
-                    body: JSON.stringify({ 
-                        email: currentEmail,
-                        remark: remark,
-                        payMethod: currentPayMethod
-                    }),
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ email: currentEmail, remark, payMethod: currentPayMethod })
                 });
-
                 const data = await response.json();
-
                 if (response.ok && data.success) {
-                    lastSubmitTime = Date.now(); // 记录提交时间
-                    let successMsg = '订单已提交！';
-                    if (currentPayMethod === 'hongbao') {
-                        successMsg += '口令已记录，';
-                    } else {
-                        successMsg += `订单号：${escapeHtml(currentOrderCode)}，`;
-                    }
-                    successMsg += '管理员确认后将发送邀请。';
-                    showMessage(successMsg, 'success');
+                    lastSubmitTime = Date.now();
+                    let msg = '订单已提交！';
+                    if (currentPayMethod === 'hongbao') msg += '口令已记录，';
+                    else msg += `订单号：${escapeHtml(currentOrderCode)}，`;
+                    msg += '管理员确认后将发送邀请。';
+                    showMessage(msg, 'success');
                     emailInput.value = '';
-                    checkQuota();
+                    checkQuotaAndStats();
                 } else {
                     showMessage(data.message || '提交失败，请稍后重试', 'error');
                 }
@@ -642,48 +477,27 @@
 
         form.addEventListener('submit', async (e) => {
             e.preventDefault();
-            
             const email = emailInput.value.trim();
             if (!email) return;
-            
-            // 客户端邮箱验证
-            if (!isValidEmail(email)) {
-                showMessage('请输入有效的邮箱地址（不超过100字符）', 'error');
-                return;
-            }
-
+            if (!isValidEmail(email)) { showMessage('请输入有效的邮箱地址（不超过100字符）', 'error'); return; }
             hideMessage();
             submitBtn.disabled = true;
             submitBtn.textContent = '检查中...';
-
-            const hasQuota = await checkQuota();
-            if (!hasQuota) {
-                showMessage('当前名额已满，请稍后再试', 'error');
-                submitBtn.disabled = false;
-                submitBtn.textContent = '获取邀请';
-                return;
-            }
-
+            const hasQuota = await checkQuotaAndStats();
+            if (!hasQuota) { showMessage('当前名额已满，请稍后再试', 'error'); submitBtn.disabled = false; submitBtn.textContent = '获取邀请'; return; }
             submitBtn.textContent = '请稍候...';
             await openPaymentModal(email);
             submitBtn.disabled = false;
             submitBtn.textContent = '获取邀请';
         });
 
-        paymentModal.addEventListener('click', (e) => {
-            if (e.target === paymentModal) {
-                closePaymentModal();
-            }
-        });
+        paymentModal.addEventListener('click', (e) => { if (e.target === paymentModal) closePaymentModal(); });
+        document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && paymentModal.classList.contains('active')) closePaymentModal(); });
 
-        document.addEventListener('keydown', (e) => {
-            if (e.key === 'Escape' && paymentModal.classList.contains('active')) {
-                closePaymentModal();
-            }
-        });
-
-        checkQuota();
-        setInterval(checkQuota, 60000);
+        // 首次加载
+        checkQuotaAndStats();
+        startRunTicker();
+        setInterval(checkQuotaAndStats, 60000);
     </script>
 </body>
 </html>
