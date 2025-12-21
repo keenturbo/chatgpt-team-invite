@@ -44,7 +44,7 @@
             display: grid;
             grid-template-columns: repeat(3, 1fr);
             gap: 12px;
-            margin-bottom: 30px;
+            margin-bottom: 24px; /* 减少底部间距，给库存提示留位置 */
         }
         .stat-card {
             background: rgba(255,255,255,0.6);
@@ -53,10 +53,10 @@
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: flex-start; /* 顶部对齐 */
+            justify-content: flex-start;
             box-shadow: 0 4px 12px rgba(0,0,0,0.03);
             border: 1px solid rgba(255,255,255,0.6);
-            min-height: 110px; /* 固定高度确保对齐 */
+            min-height: 110px;
         }
         .stat-icon {
             width: 28px;
@@ -70,7 +70,6 @@
             place-items: center;
             margin-bottom: 10px;
         }
-        /* 数据容器 */
         .stat-data {
             flex: 1;
             display: flex;
@@ -89,8 +88,6 @@
             white-space: nowrap;
         }
         .stat-value.gold { color: #d4af37; }
-        
-        /* 时间子标题样式 */
         .stat-time-sub {
             font-size: 13px;
             font-weight: 500;
@@ -99,14 +96,35 @@
             font-variant-numeric: tabular-nums;
             margin-top: 2px;
         }
-        .stat-sec { color: #ff3b30; } /* 红色秒钟 */
-
+        .stat-sec { color: #ff3b30; }
         .stat-label { 
             font-size: 10px; 
             color: #86868b; 
             text-transform: uppercase;
             letter-spacing: 0.5px;
             margin-top: 6px;
+        }
+
+        /* 库存状态提示 - 美化版 */
+        .quota-info { 
+            padding: 12px; 
+            border-radius: 12px; 
+            font-size: 14px; 
+            font-weight: 500;
+            margin-bottom: 24px; 
+            text-align: center; 
+            display: none;
+            transition: all 0.3s;
+        }
+        .quota-info.low { 
+            background: #fff8e1; color: #f57f17; 
+            border: 1px solid #ffe082;
+            box-shadow: 0 4px 12px rgba(245, 127, 23, 0.1);
+        }
+        .quota-info.out { 
+            background: #ffebee; color: #c62828; 
+            border: 1px solid #ef9a9a;
+            box-shadow: 0 4px 12px rgba(198, 40, 40, 0.1);
         }
 
         .form-group { margin-bottom: 20px; }
@@ -162,9 +180,6 @@
         .btn-cancel { background: #f5f5f7 !important; color: #1d1d1f !important; }
         .btn-cancel:hover { background: #e5e5e7 !important; }
         .btn-confirm { background: #0071e3 !important; }
-        .quota-info { background: #f5f5f7; padding: 10px; border-radius: 10px; font-size: 13px; color: #86868b; margin-bottom: 20px; text-align: center; }
-        .quota-info.low { background: #fff8e1; color: #f57f17; }
-        .quota-info.out { background: #ffebee; color: #c62828; }
         .hongbao-input input { text-align: center; font-size: 18px; letter-spacing: 2px; border-color: #ff6b35; color: #ff6b35; }
     </style>
 </head>
@@ -173,7 +188,7 @@
         <h1>Data Spices Team</h1>
         <p class="subtitle">ChatGPT 官方团队版邀请</p>
 
-        <!-- 统计栏：修正布局和时间显示 -->
+        <!-- 统计栏：极简苹果风 -->
         <div class="stats-bar">
             <div class="stat-card">
                 <div class="stat-icon">售</div>
@@ -199,6 +214,7 @@
             </div>
         </div>
 
+        <!-- 库存状态提示 -->
         <div id="quotaInfo" class="quota-info" style="display: none;"></div>
 
         <form id="inviteForm">
@@ -320,30 +336,35 @@
             orderSection.style.display = (method === 'hongbao') ? 'none' : 'block';
         }
 
+        // 核心：检查库存逻辑
         async function checkQuotaAndStats() {
             try {
                 const response = await fetch('/api/quota');
                 const data = await response.json();
                 if (data.success) {
                     const quota = data.availableQuota;
+                    
+                    // 库存提示逻辑
                     if (quota <= 0) {
-                        quotaInfoDiv.textContent = '⚠️ 名额已满，请稍后再试';
+                        quotaInfoDiv.textContent = '⚠️ 当前名额已满，请稍后再试';
                         quotaInfoDiv.className = 'quota-info out';
                         quotaInfoDiv.style.display = 'block';
                         submitBtn.disabled = true;
                         submitBtn.textContent = '暂无名额';
                     } else if (quota <= 3) {
-                        quotaInfoDiv.textContent = `🔥 仅剩 ${quota} 个名额`;
+                        quotaInfoDiv.textContent = `🔥 仅剩 ${quota} 个名额，先到先得`;
                         quotaInfoDiv.className = 'quota-info low';
                         quotaInfoDiv.style.display = 'block';
                         submitBtn.disabled = false;
                         submitBtn.textContent = '获取邀请';
                     } else {
+                        // 库存充足时不显示提示（保持简洁），或者可以显示 "名额充足"
                         quotaInfoDiv.style.display = 'none';
                         submitBtn.disabled = false;
                         submitBtn.textContent = '获取邀请';
                     }
 
+                    // 统计数据
                     const realSold = data.soldCount || 0;
                     const displaySold = soldBase + realSold;
                     statSold.textContent = displaySold.toLocaleString();
@@ -372,9 +393,7 @@
                 
                 const pad = (n) => n.toString().padStart(2, '0');
                 
-                // 拆分显示：天数单独一行，时分秒单独一行
                 statRunDay.textContent = `${days}天`;
-                // 秒钟标红
                 statRunTime.innerHTML = `${pad(hr)}:${pad(min)}:<span class="stat-sec">${pad(sec)}</span>`;
             }
             tick();
@@ -460,12 +479,17 @@
             submitBtn.disabled = true;
             submitBtn.textContent = '请稍候...';
             
+            // 提交前再次检查库存
             try {
                 const response = await fetch('/api/quota');
                 const data = await response.json();
                 if (data.success && data.availableQuota <= 0) {
-                    showMessage('名额已满', 'error');
-                    submitBtn.disabled = false;
+                    showMessage('名额已满，请等待补充', 'error');
+                    quotaInfoDiv.textContent = '⚠️ 当前名额已满，请稍后再试';
+                    quotaInfoDiv.className = 'quota-info out';
+                    quotaInfoDiv.style.display = 'block';
+                    submitBtn.disabled = true;
+                    submitBtn.textContent = '暂无名额';
                     return;
                 }
             } catch(e) {}
