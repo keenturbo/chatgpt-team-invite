@@ -18,7 +18,6 @@
             padding: 20px;
             color: #333;
         }
-        /* 苹果风容器 */
         .container {
             background: rgba(255, 255, 255, 0.8);
             backdrop-filter: blur(20px);
@@ -31,24 +30,16 @@
             border: 1px solid rgba(255,255,255,0.5);
         }
         
-        /* 标题品牌化 */
         h1 { 
-            text-align: center; 
-            color: #1d1d1f; 
-            margin-bottom: 8px; 
-            font-size: 28px; 
-            font-weight: 700;
-            letter-spacing: -0.5px;
+            text-align: center; color: #1d1d1f; margin-bottom: 8px; 
+            font-size: 28px; font-weight: 700; letter-spacing: -0.5px;
         }
         .subtitle { 
-            text-align: center; 
-            color: #86868b; 
-            margin-bottom: 30px; 
-            font-size: 15px; 
-            font-weight: 400;
+            text-align: center; color: #86868b; margin-bottom: 30px; 
+            font-size: 15px; font-weight: 400;
         }
 
-        /* 统计栏 - 苹果 Control Center 风格 */
+        /* 统计栏 - 优化对齐 */
         .stats-bar {
             display: grid;
             grid-template-columns: repeat(3, 1fr);
@@ -58,18 +49,14 @@
         .stat-card {
             background: rgba(255,255,255,0.6);
             border-radius: 16px;
-            padding: 12px 8px;
+            padding: 16px 8px;
             display: flex;
             flex-direction: column;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start; /* 顶部对齐 */
             box-shadow: 0 4px 12px rgba(0,0,0,0.03);
             border: 1px solid rgba(255,255,255,0.6);
-            transition: transform 0.2s;
-        }
-        .stat-card:hover {
-            transform: translateY(-2px);
-            background: rgba(255,255,255,0.8);
+            min-height: 110px; /* 固定高度确保对齐 */
         }
         .stat-icon {
             width: 28px;
@@ -81,185 +68,104 @@
             font-weight: 600;
             display: grid;
             place-items: center;
-            margin-bottom: 8px;
+            margin-bottom: 10px;
+        }
+        /* 数据容器 */
+        .stat-data {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            width: 100%;
         }
         .stat-value { 
-            font-size: 16px; 
+            font-size: 17px; 
             font-weight: 600; 
             color: #1d1d1f; 
             letter-spacing: -0.3px;
             line-height: 1.2;
             margin-bottom: 2px;
+            white-space: nowrap;
         }
-        .stat-value.gold { color: #d4af37; } /* 金色 */
+        .stat-value.gold { color: #d4af37; }
+        
+        /* 时间子标题样式 */
+        .stat-time-sub {
+            font-size: 13px;
+            font-weight: 500;
+            color: #1d1d1f;
+            font-feature-settings: "tnum";
+            font-variant-numeric: tabular-nums;
+            margin-top: 2px;
+        }
+        .stat-sec { color: #ff3b30; } /* 红色秒钟 */
+
         .stat-label { 
             font-size: 10px; 
             color: #86868b; 
             text-transform: uppercase;
             letter-spacing: 0.5px;
+            margin-top: 6px;
         }
 
-        /* 表单样式 */
         .form-group { margin-bottom: 20px; }
-        label { 
-            display: block; 
-            margin-bottom: 8px; 
-            color: #1d1d1f; 
-            font-weight: 500; 
-            font-size: 14px;
-            margin-left: 4px;
-        }
+        label { display: block; margin-bottom: 8px; color: #1d1d1f; font-weight: 500; font-size: 14px; margin-left: 4px; }
         input[type="email"], input[type="text"] {
-            width: 100%; 
-            padding: 16px 16px; 
-            background: rgba(255,255,255,0.8);
-            border: 1px solid #d2d2d7;
-            border-radius: 12px; 
-            font-size: 16px; 
-            transition: all 0.3s;
-            color: #1d1d1f;
+            width: 100%; padding: 16px 16px; background: rgba(255,255,255,0.8);
+            border: 1px solid #d2d2d7; border-radius: 12px; font-size: 16px; 
+            transition: all 0.3s; color: #1d1d1f;
         }
         input[type="email"]:focus, input[type="text"]:focus { 
-            outline: none; 
-            border-color: #0071e3; 
-            box-shadow: 0 0 0 4px rgba(0,113,227,0.1);
-            background: #fff;
+            outline: none; border-color: #0071e3; 
+            box-shadow: 0 0 0 4px rgba(0,113,227,0.1); background: #fff;
         }
         
-        /* 按钮样式 */
         button {
-            width: 100%; 
-            padding: 16px; 
-            background: #0071e3;
-            color: white; 
-            border: none; 
-            border-radius: 12px; 
-            font-size: 16px; 
-            font-weight: 600;
-            cursor: pointer; 
+            width: 100%; padding: 16px; background: #0071e3; color: white; border: none; 
+            border-radius: 12px; font-size: 16px; font-weight: 600; cursor: pointer; 
             transition: all 0.2s;
         }
-        button:hover { 
-            background: #0077ed; 
-            transform: scale(1.01);
-        }
-        button:active {
-            transform: scale(0.98);
-        }
-        button:disabled { 
-            background: #d2d2d7; 
-            cursor: not-allowed; 
-            transform: none; 
-            color: #86868b;
-        }
+        button:hover { background: #0077ed; transform: scale(1.01); }
+        button:active { transform: scale(0.98); }
+        button:disabled { background: #d2d2d7; cursor: not-allowed; transform: none; color: #86868b; }
 
-        /* 消息提示 */
-        .message { 
-            margin-top: 20px; 
-            padding: 14px; 
-            border-radius: 12px; 
-            text-align: center; 
-            display: none; 
-            font-size: 14px;
-            line-height: 1.5;
-        }
+        .message { margin-top: 20px; padding: 14px; border-radius: 12px; text-align: center; display: none; font-size: 14px; line-height: 1.5; }
         .message.success { background: #e8f5e9; color: #1b5e20; border: 1px solid #c8e6c9; }
         .message.error { background: #ffebee; color: #c62828; border: 1px solid #ffcdd2; }
-        .message.loading { background: #e3f2fd; color: #0d47a1; border: 1px solid #bbdefb; }
         
-        .footer { 
-            margin-top: 30px; 
-            text-align: center; 
-            color: #86868b; 
-            font-size: 12px; 
-        }
+        .footer { margin-top: 30px; text-align: center; color: #86868b; font-size: 12px; }
 
-        /* 弹窗样式 */
+        /* 弹窗及其他样式保持不变 */
         .modal-overlay { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
             background: rgba(0, 0, 0, 0.4); backdrop-filter: blur(5px); z-index: 1000; 
             align-items: flex-start; justify-content: center; padding: 20px; overflow-y: auto; }
         .modal-overlay.active { display: flex; }
-        .modal { 
-            background: rgba(255,255,255,0.95); 
-            backdrop-filter: blur(20px);
-            border-radius: 24px; 
-            padding: 30px; 
-            width: 100%; 
-            max-width: 400px;
-            text-align: center; 
-            box-shadow: 0 40px 80px rgba(0,0,0,0.15); 
-            animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); 
-            margin: 40px auto;
-        }
+        .modal { background: rgba(255,255,255,0.95); backdrop-filter: blur(20px); border-radius: 24px; padding: 30px; width: 100%; max-width: 400px; text-align: center; box-shadow: 0 40px 80px rgba(0,0,0,0.15); animation: modalIn 0.3s cubic-bezier(0.16, 1, 0.3, 1); margin: 40px auto; }
         @keyframes modalIn { from { opacity: 0; transform: scale(0.95) translateY(10px); } to { opacity: 1; transform: scale(1) translateY(0); } }
         .modal h2 { color: #1d1d1f; margin-bottom: 8px; font-size: 22px; }
         .modal .price { color: #d4af37; font-size: 32px; font-weight: 700; margin-bottom: 20px; }
-
-        /* 支付方式选项卡 */
         .pay-tabs { display: flex; background: #f5f5f7; border-radius: 10px; padding: 4px; margin-bottom: 20px; }
-        .pay-tab { 
-            flex: 1; 
-            padding: 8px; 
-            background: none; 
-            border: none; 
-            font-size: 13px; 
-            font-weight: 500; 
-            color: #86868b;
-            cursor: pointer; 
-            border-radius: 8px;
-            transition: all 0.2s;
-        }
+        .pay-tab { flex: 1; padding: 8px; background: none; border: none; font-size: 13px; font-weight: 500; color: #86868b; cursor: pointer; border-radius: 8px; transition: all 0.2s; }
         .pay-tab.active { background: #fff; color: #1d1d1f; box-shadow: 0 2px 4px rgba(0,0,0,0.05); }
-        .pay-tab.wechat.active { color: #07c160; }
-        .pay-tab.alipay.active { color: #1677ff; }
-        .pay-tab.hongbao.active { color: #ff6b35; }
-
-        /* 支付内容区 */
-        .pay-content { display: none; }
-        .pay-content.active { display: block; animation: fadeIn 0.3s; }
+        .pay-tab.wechat.active { color: #07c160; } .pay-tab.alipay.active { color: #1677ff; } .pay-tab.hongbao.active { color: #ff6b35; }
+        .pay-content { display: none; } .pay-content.active { display: block; animation: fadeIn 0.3s; }
         @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-        
-        .qrcode-box img { 
-            width: 180px; height: 180px; border-radius: 12px; 
-            box-shadow: 0 4px 12px rgba(0,0,0,0.05);
-        }
+        .qrcode-box img { width: 180px; height: 180px; border-radius: 12px; box-shadow: 0 4px 12px rgba(0,0,0,0.05); }
         .pay-tips { color: #86868b; font-size: 13px; margin: 15px 0; }
-        .mobile-tip { 
-            background: #f5f5f7; color: #1d1d1f; padding: 8px 12px; 
-            border-radius: 8px; font-size: 12px; margin: 12px 0; 
-        }
-
-        /* 订单号显示 */
-        .order-section { 
-            background: #f5f5f7; border-radius: 12px; padding: 15px; margin: 15px 0; 
-        }
-        .order-code { 
-            font-size: 28px; font-weight: 700; letter-spacing: 2px; 
-            color: #1d1d1f; font-family: 'SF Mono', 'Courier New', monospace;
-            display: block; margin: 5px 0;
-        }
+        .mobile-tip { background: #f5f5f7; color: #1d1d1f; padding: 8px 12px; border-radius: 8px; font-size: 12px; margin: 12px 0; }
+        .order-section { background: #f5f5f7; border-radius: 12px; padding: 15px; margin: 15px 0; }
+        .order-code { font-size: 28px; font-weight: 700; letter-spacing: 2px; color: #1d1d1f; font-family: 'SF Mono', 'Courier New', monospace; display: block; margin: 5px 0; }
         .order-label { font-size: 12px; color: #86868b; text-transform: uppercase; }
-        
-        /* 按钮组 */
         .modal .btn-group { display: flex; gap: 12px; margin-top: 20px; }
         .modal .btn-group button { padding: 14px; font-size: 15px; border-radius: 10px; }
         .btn-cancel { background: #f5f5f7 !important; color: #1d1d1f !important; }
         .btn-cancel:hover { background: #e5e5e7 !important; }
         .btn-confirm { background: #0071e3 !important; }
-
-        /* 库存状态 */
-        .quota-info { 
-            background: #f5f5f7; padding: 10px; border-radius: 10px; 
-            font-size: 13px; color: #86868b; margin-bottom: 20px; text-align: center; 
-        }
+        .quota-info { background: #f5f5f7; padding: 10px; border-radius: 10px; font-size: 13px; color: #86868b; margin-bottom: 20px; text-align: center; }
         .quota-info.low { background: #fff8e1; color: #f57f17; }
         .quota-info.out { background: #ffebee; color: #c62828; }
-        
-        /* 红包输入 */
-        .hongbao-input input {
-            text-align: center; font-size: 18px; letter-spacing: 2px;
-            border-color: #ff6b35; color: #ff6b35;
-        }
+        .hongbao-input input { text-align: center; font-size: 18px; letter-spacing: 2px; border-color: #ff6b35; color: #ff6b35; }
     </style>
 </head>
 <body>
@@ -267,22 +173,29 @@
         <h1>Data Spices Team</h1>
         <p class="subtitle">ChatGPT 官方团队版邀请</p>
 
-        <!-- 统计栏：极简苹果风 -->
+        <!-- 统计栏：修正布局和时间显示 -->
         <div class="stats-bar">
             <div class="stat-card">
                 <div class="stat-icon">售</div>
-                <div class="stat-value" id="statSold">--</div>
-                <div class="stat-label">总销量</div>
+                <div class="stat-data">
+                    <div class="stat-value" id="statSold">--</div>
+                    <div class="stat-label">总销量</div>
+                </div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon">省</div>
-                <div class="stat-value gold" id="statSaved">--</div>
-                <div class="stat-label">已节省</div>
+                <div class="stat-data">
+                    <div class="stat-value gold" id="statSaved">--</div>
+                    <div class="stat-label">已节省</div>
+                </div>
             </div>
             <div class="stat-card">
                 <div class="stat-icon">稳</div>
-                <div class="stat-value" id="statRun">--</div>
-                <div class="stat-label">运行时长</div>
+                <div class="stat-data">
+                    <div class="stat-value" id="statRunDay">--天</div>
+                    <div class="stat-time-sub" id="statRunTime">--:--:--</div>
+                    <div class="stat-label">运行时长</div>
+                </div>
             </div>
         </div>
 
@@ -316,14 +229,12 @@
             <h2>扫码支付</h2>
             <div class="price">¥9.9</div>
             
-            <!-- 支付方式选项卡 -->
             <div class="pay-tabs">
                 <button type="button" class="pay-tab wechat active" onclick="switchPayTab('wechat')">微信</button>
                 <button type="button" class="pay-tab alipay" onclick="switchPayTab('alipay')">支付宝</button>
                 <button type="button" class="pay-tab hongbao" onclick="switchPayTab('hongbao')">口令红包</button>
             </div>
             
-            <!-- 微信支付 -->
             <div id="payWechat" class="pay-content active">
                 <div class="qrcode-box">
                     <img src="https://pic.icon.pp.ua/wechat-pay.jpeg" alt="微信收款码">
@@ -332,7 +243,6 @@
                 <div class="pay-tips">付款备注：<strong>订单号</strong></div>
             </div>
             
-            <!-- 支付宝 -->
             <div id="payAlipay" class="pay-content">
                 <div class="qrcode-box">
                     <img src="https://pic.icon.pp.ua/alipay.jpeg" alt="支付宝收款码">
@@ -341,7 +251,6 @@
                 <div class="pay-tips">付款备注：<strong>订单号</strong></div>
             </div>
             
-            <!-- 口令红包 -->
             <div id="payHongbao" class="pay-content">
                 <div class="pay-tips">支付宝发 ¥10 口令红包</div>
                 <div class="hongbao-input" style="margin: 15px 0;">
@@ -349,7 +258,6 @@
                 </div>
             </div>
             
-            <!-- 订单号显示 -->
             <div id="orderSection" class="order-section">
                 <div class="order-label">您的订单号</div>
                 <div class="order-code" id="orderCode">....</div>
@@ -364,7 +272,6 @@
     </div>
 
     <script>
-        // 核心逻辑保持不变
         const form = document.getElementById('inviteForm');
         const emailInput = document.getElementById('email');
         const submitBtn = document.getElementById('submitBtn');
@@ -374,9 +281,12 @@
         const orderSection = document.getElementById('orderSection');
         const quotaInfoDiv = document.getElementById('quotaInfo');
         const hongbaoCodeInput = document.getElementById('hongbaoCode');
+        
+        // 统计元素
         const statSold = document.getElementById('statSold');
         const statSaved = document.getElementById('statSaved');
-        const statRun = document.getElementById('statRun');
+        const statRunDay = document.getElementById('statRunDay');
+        const statRunTime = document.getElementById('statRunTime');
 
         let currentEmail = '';
         let currentOrderCode = '';
@@ -450,19 +360,22 @@
         }
 
         function startRunTicker() {
-            function formatDuration(ms) {
+            function tick() {
+                const now = Date.now();
+                const ms = now - stableStart;
+                
                 const totalSec = Math.floor(ms / 1000);
                 const days = Math.floor(totalSec / (3600 * 24));
                 const hr = Math.floor((totalSec % (3600 * 24)) / 3600);
                 const min = Math.floor((totalSec % 3600) / 60);
                 const sec = totalSec % 60;
-                // 简洁显示：96天 12:30:45
+                
                 const pad = (n) => n.toString().padStart(2, '0');
-                return `${days}天 ${pad(hr)}:${pad(min)}:${pad(sec)}`;
-            }
-            function tick() {
-                const now = Date.now();
-                statRun.textContent = formatDuration(now - stableStart);
+                
+                // 拆分显示：天数单独一行，时分秒单独一行
+                statRunDay.textContent = `${days}天`;
+                // 秒钟标红
+                statRunTime.innerHTML = `${pad(hr)}:${pad(min)}:<span class="stat-sec">${pad(sec)}</span>`;
             }
             tick();
             setInterval(tick, 1000);
@@ -547,7 +460,6 @@
             submitBtn.disabled = true;
             submitBtn.textContent = '请稍候...';
             
-            // 检查库存
             try {
                 const response = await fetch('/api/quota');
                 const data = await response.json();
